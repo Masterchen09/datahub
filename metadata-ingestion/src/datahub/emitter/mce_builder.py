@@ -291,6 +291,10 @@ def make_ml_model_group_urn(platform: str, group_name: str, env: str) -> str:
     )
 
 
+def make_data_producer_urn(dataProducerId: str) -> str:
+    return f"urn:li:dataProducer:{dataProducerId}"
+
+
 def is_valid_ownership_type(ownership_type: Optional[str]) -> bool:
     return ownership_type is not None and ownership_type in [
         OwnershipTypeClass.TECHNICAL_OWNER,

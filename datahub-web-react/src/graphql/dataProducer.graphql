@@ -1,0 +1,17 @@
+query getDataProducer($urn: String!) {
+    dataProducer(urn: $urn) {
+        ...dataProducerFields
+        editableProperties {
+            description
+        }
+        datasets: relationships(input: { types: ["Produces"], direction: OUTGOING, start: 0, count: 100 }) {
+            ...fullRelationshipResults
+        }
+    }
+}
+
+mutation updateDataProducer($urn: String!, $input: DataProducerUpdateInput!) {
+    updateDataProducer(urn: $urn, input: $input) {
+        urn
+    }
+}

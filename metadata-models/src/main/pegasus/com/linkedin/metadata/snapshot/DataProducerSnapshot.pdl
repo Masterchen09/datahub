@@ -1,0 +1,24 @@
+namespace com.linkedin.metadata.snapshot
+
+import com.linkedin.common.DataProducerUrn
+import com.linkedin.metadata.aspect.DataProducerAspect
+
+/**
+ * A metadata snapshot for a specific DataProducer entity.
+ */
+@Entity = {
+  "name": "dataProducer",
+  "keyAspect": "dataProducerKey"
+}
+record DataProducerSnapshot {
+
+  /**
+   * URN for the entity the metadata snapshot is associated with.
+   */
+  urn: DataProducerUrn
+
+  /**
+   * The list of metadata aspects associated with the data producer. Depending on the use case, this can either be all, or a selection, of supported aspects.
+   */
+  aspects: array[DataProducerAspect]
+}

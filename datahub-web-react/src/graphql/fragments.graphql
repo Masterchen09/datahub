@@ -352,6 +352,72 @@ fragment dataJobFields on DataJob {
     }
 }
 
+fragment nonRecursiveDataProducerFields on DataProducer {
+    urn
+    properties {
+        name
+        description
+        externalUrl
+        customProperties {
+            key
+            value
+        }
+    }
+    globalTags {
+        ...globalTagsFields
+    }
+    domain {
+        ...entityDomain
+    }
+    deprecation {
+        ...deprecationFields
+    }
+}
+
+fragment dataProducerFields on DataProducer {
+    urn
+    type
+    ownership {
+        ...ownershipFields
+    }
+    properties {
+        name
+        description
+        parentProducer {
+            ...nonRecursiveDataProducerFields
+        }
+        externalUrl
+        customProperties {
+            key
+            value
+        }
+    }
+    editableProperties {
+        description
+    }
+    globalTags {
+        ...globalTagsFields
+    }
+    institutionalMemory {
+        ...institutionalMemoryFields
+    }
+    glossaryTerms {
+        ...glossaryTerms
+    }
+    domain {
+        ...entityDomain
+    }
+    deprecation {
+        ...deprecationFields
+    }
+    status {
+        removed
+    }
+    dataPlatformInstance {
+        ...dataPlatformInstanceFields
+    }
+}
+
 fragment dashboardFields on Dashboard {
     urn
     type

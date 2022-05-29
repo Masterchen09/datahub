@@ -3,6 +3,7 @@ import {
     Chart,
     Dashboard,
     DataJob,
+    DataProducer,
     Dataset,
     EntityType,
     MlFeatureTable,
@@ -133,6 +134,10 @@ export type EntityAndType =
     | {
           type: EntityType.DataJob;
           entity: DataJob;
+      }
+    | {
+          type: EntityType.DataProducer;
+          entity: DataProducer;
       }
     | {
           type: EntityType.MlfeatureTable;

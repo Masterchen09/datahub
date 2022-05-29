@@ -65,6 +65,11 @@ type Query {
     dataJob(urn: String!): DataJob
 
     """
+    Fetch a Data Producer by primary key (urn)
+    """
+    dataProducer(urn: String!): DataProducer
+
+    """
     Fetch a Tag by primary key (urn)
     """
     tag(urn: String!): Tag
@@ -239,6 +244,11 @@ type Mutation {
     Update the metadata about a particular Data Job (Task)
     """
     updateDataJob(urn: String!, input: DataJobUpdateInput!): DataJob
+
+    """
+    Update the metadata about a particular Data Producer
+    """
+    updateDataProducer(urn: String!, input: DataProducerUpdateInput!): DataProducer
 
     """
     Create a new tag. Requires the 'Manage Tags' or 'Create Tags' Platform Privilege. If a Tag with the provided ID already exists,
@@ -3790,6 +3800,26 @@ input DataJobUpdateInput {
 }
 
 """
+Arguments provided to update a Data Producer
+"""
+input DataProducerUpdateInput {
+    """
+    Update to ownership
+    """
+    ownership: OwnershipUpdate
+
+    """
+    Update to tags
+    """
+    tags: GlobalTagsUpdate
+
+    """
+    Update to editable properties
+    """
+    editableProperties: DataProducerEditablePropertiesUpdate
+}
+
+"""
 Arguments provided to update a Dataset Entity
 """
 input DatasetUpdateInput {
@@ -3923,6 +3953,16 @@ Update to writable Data Job fields
 input DataJobEditablePropertiesUpdate {
     """
     Writable description aka documentation for a Data Job
+    """
+    description: String!
+}
+
+"""
+Update to writable Data Producer fields
+"""
+input DataProducerEditablePropertiesUpdate {
+    """
+    Writable description aka documentation for a Data Producer
     """
     description: String!
 }
@@ -5497,6 +5537,129 @@ type DataJobInputOutput {
     Input datajobs that this data job depends on
     """
     inputDatajobs: [DataJob!] @deprecated
+}
+
+"""
+A Data Producer Metadata Entity, representing an producer of data
+"""
+type DataProducer implements EntityWithRelationships & Entity & BrowsableEntity {
+    """
+    The primary key of the Data Producer
+    """
+    urn: String!
+
+    """
+    A standard Entity Type
+    """
+    type: EntityType!
+
+    """
+    Additional read only properties associated with the Data Producer
+    """
+    properties: DataProducerProperties
+
+    """
+    The specific instance of the data platform that this entity belongs to
+    """
+    dataPlatformInstance: DataPlatformInstance
+
+    """
+    Additional read write properties associated with the Data Producer
+    """
+    editableProperties: DataProducerEditableProperties
+
+    """
+    The tags associated with the DataProducer
+    """
+    tags: GlobalTags
+
+    """
+    Ownership metadata of the producer
+    """
+    ownership: Ownership
+
+    """
+    Status metadata of the DataProducer
+    """
+    status: Status
+
+    """
+    The deprecation status of the Data Flow
+    """
+    deprecation: Deprecation
+
+    """
+    References to internal resources related to the dashboard
+    """
+    institutionalMemory: InstitutionalMemory
+
+    """
+    The structured glossary terms associated with the dashboard
+    """
+    glossaryTerms: GlossaryTerms
+
+    """
+    The Domain associated with the Data Producer
+    """
+    domain: DomainAssociation
+
+    """
+    Granular API for querying edges extending from this entity
+    """
+    relationships(input: RelationshipsInput!): EntityRelationshipsResult
+
+    """
+    Edges extending from this entity grouped by direction in the lineage graph
+    """
+    lineage(input: LineageInput!): EntityLineageResult
+
+    """
+    The browse paths corresponding to the data producer. If no Browse Paths have been generated before, this will be null.
+    """
+    browsePaths: [BrowsePath!]
+
+    """
+    Deprecated, use tags field instead
+    The structured tags associated with the dashboard
+    """
+    globalTags: GlobalTags @deprecated
+}
+
+"""
+Additional read only properties about a Data Producer
+"""
+type DataProducerProperties {
+    """
+    Producer display name
+    """
+    name: String!
+
+    """
+    Producer description
+    """
+    description: String
+
+    """
+    Parent producer
+    """
+    parentProducer: DataProducer!
+
+    """
+    External URL associated with the DataJob
+    """
+    externalUrl: String
+
+    """
+    A list of platform specific metadata tuples
+    """
+    customProperties: [CustomPropertiesEntry!]
+}
+
+type DataProducerEditableProperties {
+    """
+    The edited description
+    """
+    description: String
 }
 
 """

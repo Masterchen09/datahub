@@ -287,4 +287,13 @@ entities:
     keyAspect: dataHubViewKey
     aspects:
       - dataHubViewInfo
+  - name: dataProducer
+    doct: Data Producer represents entities which produces data like sensors in a production machine.
+    category: core
+    keyAspect: dataProducerKey
+    aspects:
+      - subTypes
+      - domains
+      - container
+      - deprecation
 events:

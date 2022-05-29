@@ -1,0 +1,59 @@
+namespace com.linkedin.dataproducer
+
+import com.linkedin.common.CustomProperties
+import com.linkedin.common.ExternalReference
+import com.linkedin.common.Urn
+
+/**
+ * Information about a data producer
+ */
+@Aspect = {
+  "name": "dataProducerProperties"
+}
+record DataProducerProperties includes CustomProperties, ExternalReference {
+
+  /**
+   * Data producer name
+   */
+  @Searchable = {
+    "fieldType": "TEXT_PARTIAL",
+    "enableAutocomplete": true,
+    "boostScore": 10.0
+  }
+  name: string
+
+  /**
+   * Detailed description about the data producer
+   */
+  @Searchable = {
+    "fieldType": "TEXT",
+    "hasValuesFieldName": "hasDescription"
+  }
+  description: string
+
+  /**
+   * Parent data producer of the data producer
+   */
+  @Relationship = {
+    "name": "IsPartOf",
+    "entityTypes": [ "dataProducer" ],
+  }
+  @Searchable = {
+    "fieldName": "parentProducer",
+    "fieldType": "URN",
+    "hasValuesFieldName": "hasParentProducer"
+  }
+  parentProducer: optional Urn
+
+  /**
+   * Produced datasets
+   */
+  @Relationship = {
+    "/*": {
+      "name": "Produces",
+      "entityTypes": [ "dataset" ],
+      "isLineage": true
+    }
+  }
+  datasets: array[Urn] = [ ]
+}

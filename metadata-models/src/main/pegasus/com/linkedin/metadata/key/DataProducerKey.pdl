@@ -1,0 +1,14 @@
+namespace com.linkedin.metadata.key
+
+/**
+ * Key for a DataProducer
+ */
+@Aspect = {
+  "name": "dataProducerKey"
+}
+record DataProducerKey {
+  /**
+  * Unique id for the data producer.
+  */
+  dataProducerId: string
+}

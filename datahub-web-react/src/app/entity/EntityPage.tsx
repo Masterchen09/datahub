@@ -58,6 +58,7 @@ export const EntityPage = ({ entityType }: Props) => {
         entityType === EntityType.Chart ||
         entityType === EntityType.DataFlow ||
         entityType === EntityType.DataJob ||
+        entityType === EntityType.DataProducer ||
         entityType === EntityType.Mlmodel ||
         entityType === EntityType.Mlfeature ||
         entityType === EntityType.MlprimaryKey ||
