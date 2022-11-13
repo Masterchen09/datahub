@@ -1899,6 +1899,11 @@ of data environment
 """
 enum FabricType {
     """
+    Designates sandbox fabrics
+    """
+    SBX
+
+    """
     Designates development fabrics
     """
     DEV

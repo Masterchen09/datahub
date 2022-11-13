@@ -6,6 +6,11 @@ namespace com.linkedin.common
 enum FabricType {
 
   /**
+   * Designates sandbox fabrics
+   */
+  SBX
+
+  /**
    * Designates development fabrics
    */
   DEV
