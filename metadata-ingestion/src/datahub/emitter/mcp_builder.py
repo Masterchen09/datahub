@@ -85,6 +85,7 @@ class DatabaseKey(PlatformKey):
 
 
 class SchemaKey(DatabaseKey):
+    database: Optional[str] = None
     db_schema: str = Field(alias="schema")
 
 

@@ -383,15 +383,15 @@ class SQLAlchemySource(StatefulIngestionSourceBase):
             inspector = inspect(conn)
             yield inspector
 
-    def get_db_name(self, inspector: Inspector) -> str:
+    def get_db_name(self, inspector: Inspector) -> Optional[str]:
         engine = inspector.engine
 
-        if engine and hasattr(engine, "url") and hasattr(engine.url, "database"):
+        if engine and hasattr(engine, "url") and hasattr(engine.url, "database") and engine.url.database:
             return str(engine.url.database).strip('"').lower()
         else:
             raise Exception("Unable to get database name from Sqlalchemy inspector")
 
-    def get_schema_names(self, inspector):
+    def get_schema_names(self, inspector: Inspector):
         return inspector.get_schema_names()
 
     def get_platform_instance_id(self) -> str:
@@ -404,7 +404,7 @@ class SQLAlchemySource(StatefulIngestionSourceBase):
         database = config_dict.get("database", "no_database")
         return f"{self.platform}_{host_port}_{database}"
 
-    def get_allowed_schemas(self, inspector: Inspector, db_name: str) -> Iterable[str]:
+    def get_allowed_schemas(self, inspector: Inspector, db_name: Optional[str]) -> Iterable[str]:
         # this function returns the schema names which are filtered by schema_pattern.
         for schema in self.get_schema_names(inspector):
             if not self.config.schema_pattern.allowed(schema):
@@ -439,16 +439,18 @@ class SQLAlchemySource(StatefulIngestionSourceBase):
     def gen_schema_containers(
         self,
         schema: str,
-        database: str,
+        database: Optional[str],
         extra_properties: Optional[Dict[str, Any]] = None,
     ) -> Iterable[MetadataWorkUnit]:
+        database_container_key = None
 
-        database_container_key = gen_database_key(
-            database,
-            platform=self.platform,
-            platform_instance=self.config.platform_instance,
-            env=self.config.env,
-        )
+        if database:
+            database_container_key = gen_database_key(
+                database,
+                platform=self.platform,
+                platform_instance=self.config.platform_instance,
+                env=self.config.env,
+            )
 
         schema_container_key = gen_schema_key(
             db_name=database,
@@ -473,7 +475,7 @@ class SQLAlchemySource(StatefulIngestionSourceBase):
     def add_table_to_schema_container(
         self,
         dataset_urn: str,
-        db_name: str,
+        db_name: Optional[str],
         schema: str,
     ) -> Iterable[MetadataWorkUnit]:
 
@@ -511,9 +513,11 @@ class SQLAlchemySource(StatefulIngestionSourceBase):
                 profiler = self.get_profiler_instance(inspector)
 
             db_name = self.get_db_name(inspector)
-            yield from self.gen_database_containers(
-                database=db_name,
-            )
+
+            if db_name:
+                yield from self.gen_database_containers(
+                    database=db_name,
+                )
 
             for schema in self.get_allowed_schemas(inspector, db_name):
                 self.add_information_for_schema(inspector, schema)
@@ -774,7 +778,7 @@ class SQLAlchemySource(StatefulIngestionSourceBase):
         return None
 
     def get_schema_properties(
-        self, inspector: Inspector, database: str, schema: str
+        self, inspector: Inspector, database: Optional[str], schema: str
     ) -> Optional[Dict[str, str]]:
         return None
 

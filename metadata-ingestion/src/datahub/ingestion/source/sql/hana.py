@@ -1,6 +1,7 @@
-from typing import Dict
+from typing import Dict, Optional
 
 import pydantic
+from sqlalchemy.engine.reflection import Inspector
 
 from datahub.ingestion.api.common import PipelineContext
 from datahub.ingestion.api.decorators import (
@@ -36,3 +37,10 @@ class HanaSource(SQLAlchemySource):
     def create(cls, config_dict: Dict, ctx: PipelineContext) -> "HanaSource":
         config = HanaConfig.parse_obj(config_dict)
         return cls(config, ctx)
+
+    def get_db_name(self, inspector: Inspector) -> Optional[str]:
+        try:
+            return self.get_db_name(inspector=inspector)
+        except:
+            # SAP HANA Cloud does not have a database name, therefore the exception should be ignored
+            return None

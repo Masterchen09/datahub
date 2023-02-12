@@ -23,7 +23,7 @@ from datahub.utilities.registries.domain_registry import DomainRegistry
 
 
 def gen_schema_key(
-    db_name: str,
+    db_name: Optional[str],
     schema: str,
     platform: str,
     platform_instance: Optional[str],
@@ -51,10 +51,10 @@ def gen_database_key(
 
 def gen_schema_container(
     schema: str,
-    database: str,
+    database: Optional[str],
     sub_types: List[str],
-    database_container_key: PlatformKey,
-    schema_container_key: PlatformKey,
+    database_container_key: Optional[DatabaseKey],
+    schema_container_key: SchemaKey,
     domain_registry: Optional[DomainRegistry] = None,
     domain_config: Optional[Dict[str, AllowDenyPattern]] = None,
     report: Optional[SourceReport] = None,
@@ -73,7 +73,7 @@ def gen_schema_container(
     if domain_registry:
         assert domain_config
         domain_urn = gen_domain_urn(
-            f"{database}.{schema}",
+            f"{database}.{schema}" if database else schema,
             domain_config=domain_config,
             domain_registry=domain_registry,
         )
@@ -118,7 +118,7 @@ def gen_domain_urn(
 
 def gen_database_container(
     database: str,
-    database_container_key: PlatformKey,
+    database_container_key: DatabaseKey,
     sub_types: List[str],
     domain_config: Optional[Dict[str, AllowDenyPattern]] = None,
     domain_registry: Optional[DomainRegistry] = None,
