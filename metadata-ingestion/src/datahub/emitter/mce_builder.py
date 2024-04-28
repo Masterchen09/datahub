@@ -251,8 +251,22 @@ def make_ownership_type_urn(type: str) -> str:
 
 
 def make_term_urn(term: str) -> str:
+    return make_glossary_term_urn(term)
+
+
+def make_glossary_node_urn(name: str) -> str:
     """
     Makes a term urn if the input is not a term urn already
+    """
+    if term and term.startswith("urn:li:glossaryNode:"):
+        return term
+    else:
+        return f"urn:li:glossaryNode:{term}"
+
+
+def make_glossary_term_urn(name: str) -> str:
+    """
+    Makes a glossary term urn if the input is not a term urn already
     """
     if term and term.startswith("urn:li:glossaryTerm:"):
         return term
