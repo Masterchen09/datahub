@@ -36,6 +36,8 @@ import com.linkedin.metadata.query.filter.Filter;
 import com.linkedin.metadata.search.SearchResult;
 import com.linkedin.mxe.MetadataChangeProposal;
 import graphql.execution.DataFetcherResult;
+import lombok.RequiredArgsConstructor;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -47,16 +49,12 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+@RequiredArgsConstructor
 public class CorpUserType
     implements SearchableEntityType<CorpUser, String>, MutableType<CorpUserUpdateInput, CorpUser> {
 
   private final EntityClient _entityClient;
   private final FeatureFlags _featureFlags;
-
-  public CorpUserType(final EntityClient entityClient, final FeatureFlags featureFlags) {
-    _entityClient = entityClient;
-    _featureFlags = featureFlags;
-  }
 
   @Override
   public Class<CorpUser> objectClass() {
@@ -146,62 +144,82 @@ public class CorpUserType
   public CorpUser update(
       @Nonnull String urn, @Nonnull CorpUserUpdateInput input, @Nonnull QueryContext context)
       throws Exception {
-    if (isAuthorizedToUpdate(urn, input, context)) {
-      // Get existing editable info to merge with
-      Optional<CorpUserEditableInfo> existingCorpUserEditableInfo =
-          _entityClient.getVersionedAspect(
-              context.getOperationContext(),
-              urn,
-              CORP_USER_EDITABLE_INFO_NAME,
-              0L,
-              CorpUserEditableInfo.class);
-
-      // Create the MCP
-      final MetadataChangeProposal proposal =
-          buildMetadataChangeProposalWithUrn(
-              UrnUtils.getUrn(urn),
-              CORP_USER_EDITABLE_INFO_NAME,
-              mapCorpUserEditableInfo(input, existingCorpUserEditableInfo));
-      _entityClient.ingestProposal(context.getOperationContext(), proposal, false);
-
-      return load(urn, context).getData();
-    }
-    throw new AuthorizationException(
+    if (_featureFlags.isReadOnlyModeEnabled() || !isAuthorizedToUpdate(urn, input, context)) {
+      throw new AuthorizationException(
         "Unauthorized to perform this action. Please contact your DataHub administrator.");
+    }
+
+    // Get existing editable info to merge with
+    Optional<CorpUserEditableInfo> existingCorpUserEditableInfo =
+        _entityClient.getVersionedAspect(
+            context.getOperationContext(),
+            urn,
+            CORP_USER_EDITABLE_INFO_NAME,
+            0L,
+            CorpUserEditableInfo.class);
+
+    // Create the MCP
+    final MetadataChangeProposal proposal =
+        buildMetadataChangeProposalWithUrn(
+            UrnUtils.getUrn(urn),
+            CORP_USER_EDITABLE_INFO_NAME,
+            mapCorpUserEditableInfo(input, existingCorpUserEditableInfo));
+    _entityClient.ingestProposal(context.getOperationContext(), proposal, false);
+
+    return load(urn, context).getData();
   }
 
   private boolean isAuthorizedToUpdate(
       String urn, CorpUserUpdateInput input, QueryContext context) {
-    // Decide whether the current principal should be allowed to update the Dataset.
-    final DisjunctivePrivilegeGroup orPrivilegeGroups = getAuthorizedPrivileges(input);
+
+    if (context.getActorUrn().equals(urn)) {
+      if (input.getAboutMe() != null
+          || input.getDisplayName() != null
+          || input.getPictureLink() != null
+          || input.getTeams() != null
+          || input.getTitle() != null) {
+        if (AuthorizationUtils.canEditOwnUserProfile(context)) {
+          return true;
+        }
+      } else if (input.getSlack() != null
+          || input.getEmail() != null
+          || input.getPhone() != null) {
+        if (AuthorizationUtils.canEditOwnContactInfo(context) || AuthorizationUtils.canEditOwnUserProfile(context)) {
+          return true;
+        }
+      }
+    }
+
+    // Decide whether the current principal should be allowed to update the user.
+    final DisjunctivePrivilegeGroup orPrivilegeGroups = getAuthorizedPrivileges(urn, input, context);
 
     // Either the updating actor is the user, or the actor has privileges to update the user
     // information.
-    return context.getActorUrn().equals(urn)
-        || AuthorizationUtils.isAuthorized(
+    return AuthorizationUtils.isAuthorized(
             context.getAuthorizer(),
             context.getActorUrn(),
-            PoliciesConfig.CORP_GROUP_PRIVILEGES.getResourceType(),
+            PoliciesConfig.CORP_USER_PRIVILEGES.getResourceType(),
             urn,
             orPrivilegeGroups);
   }
 
-  private DisjunctivePrivilegeGroup getAuthorizedPrivileges(final CorpUserUpdateInput updateInput) {
+  private DisjunctivePrivilegeGroup getAuthorizedPrivileges(final String urn, final CorpUserUpdateInput updateInput, final QueryContext context) {
     final ConjunctivePrivilegeGroup allPrivilegesGroup =
         new ConjunctivePrivilegeGroup(
             ImmutableList.of(PoliciesConfig.EDIT_ENTITY_PRIVILEGE.getType()));
 
     List<String> specificPrivileges = new ArrayList<>();
-    if (updateInput.getSlack() != null
-        || updateInput.getEmail() != null
-        || updateInput.getPhone() != null) {
-      specificPrivileges.add(PoliciesConfig.EDIT_CONTACT_INFO_PRIVILEGE.getType());
-    } else if (updateInput.getAboutMe() != null
+    if (updateInput.getAboutMe() != null
         || updateInput.getDisplayName() != null
         || updateInput.getPictureLink() != null
         || updateInput.getTeams() != null
         || updateInput.getTitle() != null) {
       specificPrivileges.add(PoliciesConfig.EDIT_USER_PROFILE_PRIVILEGE.getType());
+    } else if (updateInput.getSlack() != null
+        || updateInput.getEmail() != null
+        || updateInput.getPhone() != null) {
+      specificPrivileges.add(PoliciesConfig.EDIT_USER_PROFILE_PRIVILEGE.getType());
+      specificPrivileges.add(PoliciesConfig.EDIT_CONTACT_INFO_PRIVILEGE.getType());
     }
 
     final ConjunctivePrivilegeGroup specificPrivilegeGroup =

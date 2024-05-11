@@ -51,7 +51,8 @@ query getMe {
             manageGlobalAnnouncements
             createBusinessAttributes
             manageBusinessAttributes
-
+            editOwnUserProfile
+            editOwnContactInfo
         }
     }
 }

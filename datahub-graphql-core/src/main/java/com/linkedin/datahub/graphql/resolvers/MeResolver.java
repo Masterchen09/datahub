@@ -24,6 +24,8 @@ import com.linkedin.metadata.authorization.PoliciesConfig;
 import com.linkedin.r2.RemoteInvocationException;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
+import lombok.RequiredArgsConstructor;
+
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
@@ -37,15 +39,10 @@ import javax.annotation.Nonnull;
  * <p>1. User profile information 2. User privilege information, i.e. which features to display in
  * the UI.
  */
+@RequiredArgsConstructor
 public class MeResolver implements DataFetcher<CompletableFuture<AuthenticatedUser>> {
-
   private final EntityClient _entityClient;
   private final FeatureFlags _featureFlags;
-
-  public MeResolver(final EntityClient entityClient, final FeatureFlags featureFlags) {
-    _entityClient = entityClient;
-    _featureFlags = featureFlags;
-  }
 
   @Override
   public CompletableFuture<AuthenticatedUser> get(DataFetchingEnvironment environment) {
@@ -93,6 +90,10 @@ public class MeResolver implements DataFetcher<CompletableFuture<AuthenticatedUs
                 BusinessAttributeAuthorizationUtils.canCreateBusinessAttribute(context));
             platformPrivileges.setManageBusinessAttributes(
                 BusinessAttributeAuthorizationUtils.canManageBusinessAttribute(context));
+            platformPrivileges.setEditOwnUserProfile(
+                AuthorizationUtils.canEditOwnUserProfile(context));
+            platformPrivileges.setEditOwnContactInfo(
+                AuthorizationUtils.canEditOwnContactInfo(context));
             // Construct and return authenticated user object.
             final AuthenticatedUser authUser = new AuthenticatedUser();
             authUser.setCorpUser(corpUser);

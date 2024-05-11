@@ -1,6 +1,5 @@
 package com.linkedin.datahub.graphql.resolvers.post;
 
-import com.datahub.authentication.Authentication;
 import com.datahub.authentication.post.PostService;
 import com.linkedin.common.urn.Urn;
 import com.linkedin.common.urn.UrnUtils;
@@ -8,6 +7,8 @@ import com.linkedin.datahub.graphql.QueryContext;
 import com.linkedin.datahub.graphql.authorization.AuthorizationUtils;
 import com.linkedin.datahub.graphql.concurrency.GraphQLConcurrencyUtils;
 import com.linkedin.datahub.graphql.exception.AuthorizationException;
+import com.linkedin.datahub.graphql.featureflags.FeatureFlags;
+
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import java.util.concurrent.CompletableFuture;
@@ -18,19 +19,19 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class DeletePostResolver implements DataFetcher<CompletableFuture<Boolean>> {
   private final PostService _postService;
+  private final FeatureFlags _featureFlags;
 
   @Override
   public CompletableFuture<Boolean> get(final DataFetchingEnvironment environment)
       throws Exception {
     final QueryContext context = environment.getContext();
 
-    if (!AuthorizationUtils.canManageGlobalAnnouncements(context)) {
+    if (_featureFlags.isReadOnlyModeEnabled() || !AuthorizationUtils.canManageGlobalAnnouncements(context)) {
       throw new AuthorizationException(
           "Unauthorized to delete posts. Please contact your DataHub administrator if this needs corrective action.");
     }
 
     final Urn postUrn = UrnUtils.getUrn(environment.getArgument("urn"));
-    final Authentication authentication = context.getAuthentication();
 
     return GraphQLConcurrencyUtils.supplyAsync(
         () -> {

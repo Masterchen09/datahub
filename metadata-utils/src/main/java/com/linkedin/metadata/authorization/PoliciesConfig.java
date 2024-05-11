@@ -151,6 +151,19 @@ public class PoliciesConfig {
           "Manage Connections",
           "Manage connections to external DataHub platforms.");
 
+  // Own User Privileges
+  public static final Privilege EDIT_OWN_USER_PROFILE_PRIVILEGE =
+      Privilege.of(
+          "EDIT_OWN_USER_PROFILE",
+          "Edit Own User Profile",
+          "The ability to change the user's profile of the own user including display name, bio, title, profile image, etc.");
+
+  public static final Privilege EDIT_OWN_CONTACT_INFO_PRIVILEGE =
+      Privilege.of(
+          "EDIT_OWN_CONTACT_INFO",
+          "Edit Own Contact Information",
+          "The ability to change the contact information of the own user such as email & chat handles.");
+
   public static final List<Privilege> PLATFORM_PRIVILEGES =
       ImmutableList.of(
           MANAGE_POLICIES_PRIVILEGE,
@@ -175,7 +188,9 @@ public class PoliciesConfig {
           MANAGE_GLOBAL_OWNERSHIP_TYPES,
           CREATE_BUSINESS_ATTRIBUTE_PRIVILEGE,
           MANAGE_BUSINESS_ATTRIBUTE_PRIVILEGE,
-          MANAGE_CONNECTIONS_PRIVILEGE);
+          MANAGE_CONNECTIONS_PRIVILEGE,
+          EDIT_OWN_USER_PROFILE_PRIVILEGE,
+          EDIT_OWN_CONTACT_INFO_PRIVILEGE);
 
   // Resource Privileges //
 
@@ -754,7 +769,7 @@ public class PoliciesConfig {
                           Disjunctive.disjoint(
                               VIEW_ENTITY_PAGE_PRIVILEGE,
                               GET_ENTITY_PRIVILEGE,
-                              EDIT_ENTITY_PRIVILEGE,
+                              EDIT_ENTITY_PRIVILEGE, // TODO: This cannot be correct? ApiOperation.READ -> EDIT_ENTITY_PRIVILEGE and DELETE_ENTITY_PRIVILEGE?!
                               DELETE_ENTITY_PRIVILEGE))
                       .put(ApiOperation.UPDATE, Disjunctive.disjoint(EDIT_ENTITY_PRIVILEGE))
                       .put(ApiOperation.DELETE, Disjunctive.disjoint(DELETE_ENTITY_PRIVILEGE))
@@ -762,7 +777,7 @@ public class PoliciesConfig {
                           ApiOperation.EXISTS,
                           Disjunctive.disjoint(
                               EXISTS_ENTITY_PRIVILEGE,
-                              EDIT_ENTITY_PRIVILEGE,
+                              EDIT_ENTITY_PRIVILEGE, // TODO: This cannot be correct? ApiOperation.EXISTS -> EDIT_ENTITY_PRIVILEGE, DELETE_ENTITY_PRIVILEGE and VIEW_ENTITY_PAGE_PRIVILEGE?!
                               DELETE_ENTITY_PRIVILEGE,
                               VIEW_ENTITY_PAGE_PRIVILEGE,
                               SEARCH_PRIVILEGE))
@@ -778,7 +793,7 @@ public class PoliciesConfig {
                           Disjunctive.disjoint(
                               VIEW_ENTITY_PAGE_PRIVILEGE,
                               GET_ENTITY_PRIVILEGE,
-                              EDIT_ENTITY_PRIVILEGE,
+                              EDIT_ENTITY_PRIVILEGE, // TODO: This cannot be correct? ApiOperation.READ -> EDIT_ENTITY_PRIVILEGE, EDIT_LINEAGE_PRIVILEGE and DELETE_ENTITY_PRIVILEGE?!
                               EDIT_LINEAGE_PRIVILEGE,
                               DELETE_ENTITY_PRIVILEGE))
                       .put(
@@ -794,7 +809,7 @@ public class PoliciesConfig {
                           ApiOperation.EXISTS,
                           Disjunctive.disjoint(
                               EXISTS_ENTITY_PRIVILEGE,
-                              VIEW_ENTITY_PAGE_PRIVILEGE,
+                              VIEW_ENTITY_PAGE_PRIVILEGE, // TODO: This cannot be correct? ApiOperation.EXISTS -> VIEW_ENTITY_PAGE_PRIVILEGE, EDIT_ENTITY_PRIVILEGE, EDIT_LINEAGE_PRIVILEGE and DELETE_ENTITY_PRIVILEGE?!
                               SEARCH_PRIVILEGE,
                               EDIT_ENTITY_PRIVILEGE,
                               EDIT_LINEAGE_PRIVILEGE,
@@ -810,7 +825,7 @@ public class PoliciesConfig {
                           Disjunctive.disjoint(
                               VIEW_ENTITY_PAGE_PRIVILEGE,
                               GET_ENTITY_PRIVILEGE,
-                              EDIT_ENTITY_PRIVILEGE))
+                              EDIT_ENTITY_PRIVILEGE)) // TODO: This cannot be correct? ApiOperation.READ -> EDIT_ENTITY_PRIVILEGE?!
                       .put(ApiOperation.UPDATE, Disjunctive.disjoint(EDIT_ENTITY_PRIVILEGE))
                       .put(
                           ApiOperation.DELETE,
@@ -819,7 +834,7 @@ public class PoliciesConfig {
                           ApiOperation.EXISTS,
                           Disjunctive.disjoint(
                               EXISTS_ENTITY_PRIVILEGE,
-                              VIEW_ENTITY_PAGE_PRIVILEGE,
+                              VIEW_ENTITY_PAGE_PRIVILEGE, // TODO: This cannot be correct? ApiOperation.EXISTS -> VIEW_ENTITY_PAGE_PRIVILEGE, EDIT_ENTITY_PRIVILEGE and DELETE_ENTITY_PRIVILEGE?!
                               SEARCH_PRIVILEGE,
                               EDIT_ENTITY_PRIVILEGE,
                               DELETE_ENTITY_PRIVILEGE,
@@ -968,7 +983,7 @@ public class PoliciesConfig {
                 .setDescription("View self entity page.")
                 .setActors(new DataHubActorFilter().setUsers(new UrnArray(actorUrn)))
                 .setPrivileges(
-                    PoliciesConfig.API_PRIVILEGE_MAP.get(ENTITY).get(READ).stream()
+                    Disjunctive.disjoint(VIEW_ENTITY_PAGE_PRIVILEGE, GET_ENTITY_PRIVILEGE).stream()
                         .flatMap(Collection::stream)
                         .map(PoliciesConfig.Privilege::getType)
                         .collect(Collectors.toCollection(StringArray::new)))

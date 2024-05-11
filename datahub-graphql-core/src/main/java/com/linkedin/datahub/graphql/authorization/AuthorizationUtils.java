@@ -63,7 +63,7 @@ public class AuthorizationUtils {
   }
 
   /**
-   * Returns true if the current used is able to create Domains. This is true if the user has the
+   * Returns true if the current user is able to create Domains. This is true if the user has the
    * 'Manage Domains' or 'Create Domains' platform privilege.
    */
   public static boolean canCreateDomains(@Nonnull QueryContext context) {
@@ -85,7 +85,7 @@ public class AuthorizationUtils {
   }
 
   /**
-   * Returns true if the current used is able to create Tags. This is true if the user has the
+   * Returns true if the current user is able to create Tags. This is true if the user has the
    * 'Manage Tags' or 'Create Tags' platform privilege.
    */
   public static boolean canCreateTags(@Nonnull QueryContext context) {
@@ -167,6 +167,22 @@ public class AuthorizationUtils {
         context.getAuthorizer(),
         context.getActorUrn(),
         PoliciesConfig.MANAGE_GLOBAL_OWNERSHIP_TYPES);
+  }
+
+  /** Returns true if the authenticated user has privileges to edit it's own user profile. */
+  public static boolean canEditOwnUserProfile(@Nonnull QueryContext context) {
+    return AuthUtil.isAuthorized(
+        context.getAuthorizer(),
+        context.getActorUrn(),
+        PoliciesConfig.EDIT_OWN_USER_PROFILE_PRIVILEGE);
+  }
+
+  /** Returns true if the authenticated user has privileges to edit it's own contact information. */
+  public static boolean canEditOwnContactInfo(@Nonnull QueryContext context) {
+    return AuthUtil.isAuthorized(
+        context.getAuthorizer(),
+        context.getActorUrn(),
+        PoliciesConfig.EDIT_OWN_CONTACT_INFO_PRIVILEGE);
   }
 
   public static boolean canEditProperties(@Nonnull Urn targetUrn, @Nonnull QueryContext context) {
