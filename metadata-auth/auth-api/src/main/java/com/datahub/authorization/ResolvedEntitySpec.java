@@ -31,6 +31,7 @@ public class ResolvedEntitySpec {
    * @return a set of owner urns, or empty set if none exist.
    */
   public Set<String> getOwners() {
+    // TODO: Here we could include "implicit" owners -> EntityFieldType.TYPE == CorpUser -> EntityFieldType.URN as owner...?
     if (!fieldResolvers.containsKey(EntityFieldType.OWNER)) {
       return Collections.emptySet();
     }

@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { message, Button, Input, Modal, Typography, Form, Tooltip } from 'antd';
+import { message, Button, Input, Modal, Typography, Form } from 'antd';
 import { useUpdateCorpUserPropertiesMutation } from '../../../graphql/user.generated';
 import { useEnterKeyListener } from '../../shared/useEnterKeyListener';
-import { useAppConfig } from '../../useAppConfig';
 
 type PropsData = {
     name: string | undefined;
@@ -16,17 +15,17 @@ type PropsData = {
 };
 
 type Props = {
-    visible: boolean;
+    open: boolean;
     onClose: () => void;
     onSave: () => void;
+    canEditUserProfile: boolean;
+    canEditContactInfo: boolean;
     editModalData: PropsData;
 };
 /** Regex Validations */
 export const USER_NAME_REGEX = new RegExp('^[a-zA-Z ]*$');
 
-export default function UserEditProfileModal({ visible, onClose, onSave, editModalData }: Props) {
-    const { config } = useAppConfig();
-    const { readOnlyModeEnabled } = config.featureFlags;
+export default function UserEditProfileModal({ open, onClose, onSave, canEditUserProfile, canEditContactInfo, editModalData }: Props) {
     const [updateCorpUserPropertiesMutation] = useUpdateCorpUserPropertiesMutation();
     const [form] = Form.useForm();
 
@@ -52,13 +51,13 @@ export default function UserEditProfileModal({ visible, onClose, onSave, editMod
             variables: {
                 urn: editModalData?.urn || '',
                 input: {
-                    displayName: data.name,
-                    title: data.title,
-                    pictureLink: data.image,
-                    teams: data.team?.split(','),
-                    email: data.email,
-                    slack: data.slack,
-                    phone: data.phone,
+                    displayName: canEditUserProfile ? data.name : null,
+                    title: canEditUserProfile ? data.title : null,
+                    pictureLink: canEditUserProfile ? data.image : null,
+                    teams: canEditUserProfile ? data.team?.split(',') : null,
+                    email: canEditUserProfile || canEditContactInfo ? data.email : null,
+                    slack: canEditUserProfile || canEditContactInfo ? data.slack : null,
+                    phone: canEditUserProfile || canEditContactInfo ? data.phone : null,
                 },
             },
         })
@@ -95,7 +94,7 @@ export default function UserEditProfileModal({ visible, onClose, onSave, editMod
     return (
         <Modal
             title="Edit Profile"
-            visible={visible}
+            open={open}
             onCancel={onClose}
             footer={
                 <>
@@ -117,133 +116,128 @@ export default function UserEditProfileModal({ visible, onClose, onSave, editMod
                     setSaveButtonEnabled(form.getFieldsError().some((field) => field.errors.length > 0))
                 }
             >
-                <Form.Item
-                    name="name"
-                    label={<Typography.Text strong>Name</Typography.Text>}
-                    rules={[
-                        {
-                            required: true,
-                            message: 'Enter a display name.',
-                        },
-                        { whitespace: true },
-                        { min: 2, max: 50 },
-                        {
-                            pattern: USER_NAME_REGEX,
-                            message: '',
-                        },
-                    ]}
-                    hasFeedback
-                >
-                    <Input
-                        placeholder="John Smith"
-                        value={data.name}
-                        onChange={(event) => setData({ ...data, name: event.target.value })}
-                        disabled={readOnlyModeEnabled}
-                    />
-                </Form.Item>
-                <Form.Item
-                    name="title"
-                    label={<Typography.Text strong>Title/Role</Typography.Text>}
-                    rules={[{ whitespace: true }, { min: 2, max: 50 }]}
-                    hasFeedback
-                >
-                    <Input
-                        placeholder="Data Analyst"
-                        value={data.title}
-                        onChange={(event) => setData({ ...data, title: event.target.value })}
-                        disabled={readOnlyModeEnabled}
-                    />
-                </Form.Item>
-                <Tooltip
-                    title="Editing image URL has been disabled."
-                    overlayStyle={readOnlyModeEnabled ? {} : { display: 'none' }}
-                    placement="bottom"
-                >
-                    <Form.Item
-                        name="image"
-                        label={<Typography.Text strong>Image URL</Typography.Text>}
-                        rules={[{ whitespace: true }, { type: 'url', message: 'not valid url' }]}
-                        hasFeedback
-                    >
-                        <Input
-                            placeholder="https://www.example.com/photo.png"
-                            value={data.image}
-                            onChange={(event) => setData({ ...data, image: event.target.value })}
-                            disabled={readOnlyModeEnabled}
-                        />
-                    </Form.Item>
-                </Tooltip>
-                <Form.Item
-                    name="team"
-                    label={<Typography.Text strong>Team</Typography.Text>}
-                    rules={[{ whitespace: true }, { min: 2, max: 50 }]}
-                >
-                    <Input
-                        placeholder="Product Engineering"
-                        value={data.team}
-                        onChange={(event) => setData({ ...data, team: event.target.value })}
-                        disabled={readOnlyModeEnabled}
-                    />
-                </Form.Item>
-                <Form.Item
-                    name="email"
-                    label={<Typography.Text strong>Email</Typography.Text>}
-                    rules={[
-                        {
-                            required: true,
-                            message: 'Enter your email',
-                        },
-                        {
-                            type: 'email',
-                            message: 'Please enter valid email',
-                        },
-                        { whitespace: true },
-                        { min: 2, max: 50 },
-                    ]}
-                    hasFeedback
-                >
-                    <Input
-                        placeholder="john.smith@example.com"
-                        value={data.email}
-                        onChange={(event) => setData({ ...data, email: event.target.value })}
-                        disabled={readOnlyModeEnabled}
-                    />
-                </Form.Item>
-                <Form.Item
-                    name="slack"
-                    label={<Typography.Text strong>Slack</Typography.Text>}
-                    rules={[{ whitespace: true }, { min: 2, max: 50 }]}
-                    hasFeedback
-                >
-                    <Input
-                        placeholder="john_smith"
-                        value={data.slack}
-                        onChange={(event) => setData({ ...data, slack: event.target.value })}
-                        disabled={readOnlyModeEnabled}
-                    />
-                </Form.Item>
-                <Form.Item
-                    name="phone"
-                    label={<Typography.Text strong>Phone</Typography.Text>}
-                    rules={[
-                        {
-                            pattern: new RegExp('^(?=.*[0-9])[- +()0-9]+$'),
-                            message: 'not valid phone number',
-                        },
-                        {
-                            min: 5,
-                            max: 15,
-                        },
-                    ]}
-                    hasFeedback
-                >
-                    <Input
-                        placeholder="444-999-9999"
-                        value={data.phone}
-                        onChange={(event) => setData({ ...data, phone: event.target.value })}
-                        disabled={readOnlyModeEnabled}
-                    />
-                </Form.Item>
+                {canEditUserProfile && (
+                    <>
+                        <Form.Item
+                            name="name"
+                            label={<Typography.Text strong>Name</Typography.Text>}
+                            rules={[
+                                {
+                                    required: true,
+                                    message: 'Enter a display name.',
+                                },
+                                { whitespace: true },
+                                { min: 2, max: 50 },
+                                {
+                                    pattern: USER_NAME_REGEX,
+                                    message: '',
+                                },
+                            ]}
+                            hasFeedback
+                        >
+                            <Input
+                                placeholder="John Smith"
+                                value={data.name}
+                                onChange={(event) => setData({ ...data, name: event.target.value })}
+                                disabled={!canEditUserProfile} />
+                        </Form.Item>
+                        <Form.Item
+                            name="title"
+                            label={<Typography.Text strong>Title/Role</Typography.Text>}
+                            rules={[{ whitespace: true }, { min: 2, max: 50 }]}
+                            hasFeedback
+                        >
+                            <Input
+                                placeholder="Data Analyst"
+                                value={data.title}
+                                onChange={(event) => setData({ ...data, title: event.target.value })}
+                            />
+                        </Form.Item>
+                        <Form.Item
+                            name="image"
+                            label={<Typography.Text strong>Image URL</Typography.Text>}
+                            rules={[{ whitespace: true }, { type: 'url', message: 'not valid url' }]}
+                            hasFeedback
+                        >
+                            <Input
+                                placeholder="https://www.example.com/photo.png"
+                                value={data.image}
+                                onChange={(event) => setData({ ...data, image: event.target.value })}
+                            />
+                        </Form.Item>
+                        <Form.Item
+                            name="team"
+                            label={<Typography.Text strong>Team</Typography.Text>}
+                            rules={[{ whitespace: true }, { min: 2, max: 50 }]}
+                        >
+                            <Input
+                                placeholder="Product Engineering"
+                                value={data.team}
+                                onChange={(event) => setData({ ...data, team: event.target.value })}
+                            />
+                        </Form.Item>
+                    </>
+                )}
+                {(canEditUserProfile || canEditContactInfo) && (
+                    <>
+                        <Form.Item
+                            name="email"
+                            label={<Typography.Text strong>Email</Typography.Text>}
+                            rules={[
+                                {
+                                    required: true,
+                                    message: 'Enter your email',
+                                },
+                                {
+                                    type: 'email',
+                                    message: 'Please enter valid email',
+                                },
+                                { whitespace: true },
+                                { min: 2, max: 50 },
+                            ]}
+                            hasFeedback
+                        >
+                            <Input
+                                placeholder="john.smith@example.com"
+                                value={data.email}
+                                onChange={(event) => setData({ ...data, email: event.target.value })}
+                            />
+                        </Form.Item>
+                        <Form.Item
+                            name="slack"
+                            label={<Typography.Text strong>Slack</Typography.Text>}
+                            rules={[{ whitespace: true }, { min: 2, max: 50 }]}
+                            hasFeedback
+                        >
+                            <Input
+                                placeholder="john_smith"
+                                value={data.slack}
+                                onChange={(event) => setData({ ...data, slack: event.target.value })}
+                            />
+                        </Form.Item>
+                        <Form.Item
+                            name="phone"
+                            label={<Typography.Text strong>Phone</Typography.Text>}
+                            rules={[
+                                {
+                                    pattern: new RegExp('^(?=.*[0-9])[- +()0-9]+$'),
+                                    message: 'not valid phone number',
+                                },
+                                {
+                                    min: 5,
+                                    max: 15,
+                                },
+                            ]}
+                            hasFeedback
+                        >
+                            <Input
+                                placeholder="444-999-9999"
+                                value={data.phone}
+                                onChange={(event) => setData({ ...data, phone: event.target.value })}
+                            />
+                        </Form.Item>
+                    </>
+                )}
             </Form>
         </Modal>
     );

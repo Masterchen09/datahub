@@ -1465,7 +1465,7 @@ export const businessAttribute = {
                         urn: 'urn:li:glossaryTerm:1',
                         type: EntityType.GlossaryTerm,
                         hierarchicalName: 'SampleHierarchicalName',
-                        name: 'SampleName', 
+                        name: 'SampleName',
                     },
                     associatedUrn: 'urn:li:businessAttribute:ba1'
                 }
@@ -3628,6 +3628,8 @@ export const mocks = [
                         manageGlobalAnnouncements: true,
                         createBusinessAttributes: true,
                         manageBusinessAttributes: true,
+                        editOwnUserProfile: true,
+                        editOwnContactInfo: true,
                     },
                 },
             },

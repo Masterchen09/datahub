@@ -3,7 +3,6 @@ package com.linkedin.datahub.graphql.resolvers.post;
 import static com.linkedin.datahub.graphql.resolvers.ResolverUtils.*;
 import static com.linkedin.metadata.Constants.*;
 
-import com.datahub.authentication.Authentication;
 import com.linkedin.common.urn.Urn;
 import com.linkedin.datahub.graphql.QueryContext;
 import com.linkedin.datahub.graphql.concurrency.GraphQLConcurrencyUtils;
@@ -38,7 +37,6 @@ public class ListPostsResolver implements DataFetcher<CompletableFuture<ListPost
   public CompletableFuture<ListPostsResult> get(final DataFetchingEnvironment environment)
       throws Exception {
     final QueryContext context = environment.getContext();
-    final Authentication authentication = context.getAuthentication();
 
     final ListPostsInput input =
         bindArgument(environment.getArgument("input"), ListPostsInput.class);

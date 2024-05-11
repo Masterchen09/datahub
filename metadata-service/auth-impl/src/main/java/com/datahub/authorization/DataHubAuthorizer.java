@@ -103,7 +103,7 @@ public class DataHubAuthorizer implements Authorizer {
   public AuthorizationResult authorize(@Nonnull final AuthorizationRequest request) {
 
     // 0. Short circuit: If the action is being performed by the system (root), always allow it.
-    if (isSystemRequest(request, systemOpContext.getAuthentication())) {
+    if (isSystemRequest(request)) {
       return new AuthorizationResult(request, AuthorizationResult.Type.ALLOW, null);
     }
 
@@ -230,6 +230,9 @@ public class DataHubAuthorizer implements Authorizer {
       if (matchingActors.getAllGroups()) {
         allGroups = true;
       }
+      // TODO: Alternatively implicit owners could be added here...
+      // policy.
+      // resourceSpec.
     }
 
     // Step 4: Return all authorized users and groups.
@@ -259,9 +262,8 @@ public class DataHubAuthorizer implements Authorizer {
    * Returns true if the request's is coming from the system itself, in which cases the action is
    * always authorized.
    */
-  private boolean isSystemRequest(
-      final AuthorizationRequest request, final Authentication systemAuthentication) {
-    return systemAuthentication.getActor().toUrnStr().equals(request.getActorUrn());
+  private boolean isSystemRequest(final AuthorizationRequest request) {
+    return systemOpContext.getAuthentication().getActor().toUrnStr().equals(request.getActorUrn());
   }
 
   /** Returns true if a policy grants the requested privilege for a given actor and resource. */

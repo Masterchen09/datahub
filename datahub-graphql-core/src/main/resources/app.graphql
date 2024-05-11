@@ -146,6 +146,15 @@ type PlatformPrivileges {
   """
   manageBusinessAttributes: Boolean!
 
+  """
+  Whether the user can edit it's own user profile.
+  """
+  editOwnUserProfile: Boolean!
+
+  """
+  Whether the user can edit it's own contact information.
+  """
+  editOwnContactInfo: Boolean!
 }
 
 """
@@ -449,7 +458,7 @@ Configurations related to DataHub Views feature
 type FeatureFlagsConfig {
   """
   Whether read only mode is enabled on an instance.
-  Right now this only affects ability to edit user profile image URL but can be extended.
+  Right now this only affects ability to edit user profile information like name, title or image URL but can be extended.
   """
   readOnlyModeEnabled: Boolean!
 

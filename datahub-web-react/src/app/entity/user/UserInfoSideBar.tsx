@@ -2,7 +2,7 @@ import { Divider, message, Space, Button, Typography, Tag } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { EditOutlined, MailOutlined, PhoneOutlined, SlackOutlined } from '@ant-design/icons';
 import { useUpdateCorpUserPropertiesMutation } from '../../../graphql/user.generated';
-import { EntityRelationship, DataHubRole } from '../../../types.generated';
+import { EntityRelationship, EntityType, DataHubRole } from '../../../types.generated';
 import UserEditProfileModal from './UserEditProfileModal';
 import CustomAvatar from '../../shared/avatar/CustomAvatar';
 import {
@@ -22,6 +22,9 @@ import EntityGroups from '../shared/EntityGroups';
 import { mapRoleIcon } from '../../identity/user/UserUtils';
 import { useUserContext } from '../../context/useUserContext';
 import { useBrowserTitle } from '../../shared/BrowserTabTitleContext';
+import { useAppConfig } from '../../useAppConfig';
+import { useGetGrantedPrivilegesQuery } from '../../../graphql/policy.generated';
+import { EDIT_ENTITY, EDIT_USER_PROFILE, EDIT_CONTACT_INFO } from '../shared/constants';
 
 const { Paragraph } = Typography;
 
@@ -54,29 +57,53 @@ export default function UserInfoSideBar({ sideBarData, refetch }: Props) {
     const { name, aboutText, avatarName, email, groupsDetails, phone, photoUrl, role, slack, team, dataHubRoles, urn } =
         sideBarData;
 
+    const { config } = useAppConfig();
+    const { readOnlyModeEnabled } = config.featureFlags;
+
     const [updateCorpUserPropertiesMutation] = useUpdateCorpUserPropertiesMutation();
 
     const [groupSectionExpanded, setGroupSectionExpanded] = useState(false);
     const [editProfileModal, showEditProfileModal] = useState(false);
     /* eslint-disable @typescript-eslint/no-unused-vars */
     const me = useUserContext();
-    const isProfileOwner = me?.user?.urn === urn;
 
-    const {  updateTitle } = useBrowserTitle();
-    
-    useEffect(()=>{
+    const { data } = useGetGrantedPrivilegesQuery({
+        variables: {
+            input: {
+                actorUrn: me?.user?.urn as string,
+                resourceSpec: { resourceType: EntityType.CorpUser, resourceUrn: urn as string },
+            },
+        },
+        skip: readOnlyModeEnabled || !me?.user?.urn || !urn,
+        fetchPolicy: 'cache-first',
+    });
+    const privileges = data?.getGrantedPrivileges?.privileges || [];
+
+    const { updateTitle } = useBrowserTitle();
+
+    useEffect(() => {
         // You can use the title and updateTitle function here
         // For example, updating the title when the component mounts
-        if(name){
+        if (name) {
             updateTitle(`User | ${name}`);
         }
         // // Don't forget to clean up the title when the component unmounts
         return () => {
-            if(name){ // added to condition for rerendering issue
+            if (name) { // added to condition for rerendering issue
                 updateTitle('');
             }
         };
     }, [name, updateTitle]);
+
+    const canEditUserProfile = !readOnlyModeEnabled && (
+        (me?.user?.urn === urn && !!me?.platformPrivileges?.editOwnUserProfile) ||
+        !!privileges.find((privilege) => privilege === EDIT_ENTITY || privilege === EDIT_USER_PROFILE)
+    );
+
+    const canEditContactInfo = !readOnlyModeEnabled && (
+        (me?.user?.urn === urn && (!!me?.platformPrivileges?.editOwnUserProfile || !!me?.platformPrivileges?.editOwnContactInfo)) ||
+        !!privileges.find((privilege) => privilege === EDIT_ENTITY || privilege === EDIT_USER_PROFILE || privilege === EDIT_CONTACT_INFO)
+    );
 
     const getEditModalData = {
         urn,
@@ -116,7 +143,7 @@ export default function UserInfoSideBar({ sideBarData, refetch }: Props) {
     return (
         <>
             <SideBar>
-                <SideBarSubSection className={isProfileOwner ? '' : 'fullView'}>
+                <SideBarSubSection className={canEditUserProfile || canEditContactInfo ? '' : 'fullView'}>
                     <CustomAvatar size={160} photoUrl={photoUrl} name={avatarName} style={AVATAR_STYLE} />
                     <Name>{name || <EmptyValue />}</Name>
                     {role && <TitleRole>{role}</TitleRole>}
@@ -146,7 +173,7 @@ export default function UserInfoSideBar({ sideBarData, refetch }: Props) {
                         About
                         <AboutSectionText>
                             <Paragraph
-                                editable={isProfileOwner ? { onChange: onSaveAboutMe } : false}
+                                editable={canEditUserProfile ? { onChange: onSaveAboutMe } : false}
                                 ellipsis={{ rows: 2, expandable: true, symbol: 'Read more' }}
                             >
                                 {aboutText || <EmptyValue />}
@@ -163,7 +190,7 @@ export default function UserInfoSideBar({ sideBarData, refetch }: Props) {
                         />
                     </GroupsSection>
                 </SideBarSubSection>
-                {isProfileOwner && (
+                {(canEditUserProfile || canEditContactInfo) && (
                     <EditButton>
                         <Button icon={<EditOutlined />} onClick={() => showEditProfileModal(true)}>
                             Edit Profile
@@ -173,11 +200,13 @@ export default function UserInfoSideBar({ sideBarData, refetch }: Props) {
             </SideBar>
             {/* Modal */}
             <UserEditProfileModal
-                visible={editProfileModal}
+                open={editProfileModal}
                 onClose={() => showEditProfileModal(false)}
                 onSave={() => {
                     refetch();
                 }}
+                canEditUserProfile={canEditUserProfile}
+                canEditContactInfo={canEditContactInfo}
                 editModalData={getEditModalData}
             />
         </>
