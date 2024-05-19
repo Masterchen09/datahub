@@ -1,10 +1,11 @@
 import React from 'react';
 
-import { Card, Typography } from 'antd';
+import { Card, Tooltip, Typography } from 'antd';
 import styled from 'styled-components';
 
 import { Highlight as HighlightType } from '../../../types.generated';
-import { formatNumber } from '../../shared/formatNumber';
+import { formatNumber, formatNumberWithoutAbbreviation } from '../../shared/formatNumber';
+import FormattedNumber from '../../shared/FormattedNumber';
 
 type Props = {
     highlight: HighlightType;
@@ -44,7 +45,7 @@ export const Highlight = ({ highlight, shortenValue }: Props) => {
     return (
         <HighlightCard>
             <Typography.Title level={1}>
-                {(shortenValue && formatNumber(highlight.value)) || highlight.value}
+                {(shortenValue && <FormattedNumber value={highlight.value} />) || highlight.value}
             </Typography.Title>
             <TitleContainer>
                 <TitleText strong>{highlight.title}</TitleText>

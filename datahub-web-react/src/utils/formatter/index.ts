@@ -1,3 +1,4 @@
+// see also: datahub-web-react\src\app\shared\formatNumber.ts
 type NumMapType = Record<'billion' | 'million' | 'thousand', { value: number; symbol: string }>;
 
 const NumMap: NumMapType = {
