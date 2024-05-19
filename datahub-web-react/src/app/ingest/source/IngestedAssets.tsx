@@ -62,6 +62,7 @@ export default function IngestedAssets({ id }: Props) {
     // First thing to do is to search for all assets with the id as the run id!
     const [showAssetSearch, setShowAssetSearch] = useState(false);
 
+    // TODO: Use scrollAcrossEntities instead to get exact number of entities? ScrollResults also has the facets field...
     // Execute search
     const { data, loading, error } = useGetSearchResultsForMultipleQuery({
         variables: {
