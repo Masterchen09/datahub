@@ -64,18 +64,24 @@ public class IngestRetentionPoliciesStep implements BootstrapStep {
   @Override
   public void execute(@Nonnull OperationContext systemOperationContext)
       throws IOException, URISyntaxException {
-    // 0. Execute preflight check to see whether we need to ingest policies
-    if (_entityService.exists(systemOperationContext, UPGRADE_ID_URN, true)) {
-      log.info("Retention was applied. Skipping.");
-      return;
-    }
-    log.info("Ingesting default retention...");
-
     // If retention is disabled, skip step
     if (!_enableRetention) {
       log.info("IngestRetentionPolicies disabled. Skipping.");
       return;
     }
+
+    // 0. Execute preflight check to see whether we need to ingest policies
+    if (_entityService.exists(systemOperationContext, UPGRADE_ID_URN, true)) {
+      // 1. Apply retention to all records
+      if (_applyOnBootstrap) {
+        log.info("Applying policies to all records");
+        _retentionService.batchApplyRetention(null, null);
+      }
+
+      return;
+    }
+
+    log.info("Ingesting default retention...");
 
     // 1. Read default retention config
     final Map<DataHubRetentionKey, DataHubRetentionConfig> retentionPolicyMap =
@@ -86,24 +92,22 @@ public class IngestRetentionPoliciesStep implements BootstrapStep {
 
     // 4. Set the specified retention policies
     log.info("Setting {} policies", retentionPolicyMap.size());
-    boolean hasUpdate = false;
     for (DataHubRetentionKey key : retentionPolicyMap.keySet()) {
       if (_retentionService.setRetention(
           systemOperationContext,
           key.getEntityName(),
           key.getAspectName(),
           retentionPolicyMap.get(key))) {
-        hasUpdate = true;
       }
     }
 
-    // 5. If there were updates on any of the retention policies, apply retention to all records
-    if (hasUpdate && _applyOnBootstrap) {
+    BootstrapStep.setUpgradeResult(systemOperationContext, UPGRADE_ID_URN, _entityService);
+
+    // 5. Apply retention to all records
+    if (_applyOnBootstrap) {
       log.info("Applying policies to all records");
       _retentionService.batchApplyRetention(null, null);
     }
-
-    BootstrapStep.setUpgradeResult(systemOperationContext, UPGRADE_ID_URN, _entityService);
   }
 
   // Parse input yaml file or yaml files in the input directory to generate a retention policy map

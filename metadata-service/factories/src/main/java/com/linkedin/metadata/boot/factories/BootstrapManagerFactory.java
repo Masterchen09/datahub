@@ -9,6 +9,7 @@ import com.linkedin.gms.factory.search.SearchDocumentTransformerFactory;
 import com.linkedin.metadata.boot.BootstrapManager;
 import com.linkedin.metadata.boot.BootstrapStep;
 import com.linkedin.metadata.boot.dependencies.BootstrapDependency;
+import com.linkedin.metadata.boot.steps.ApplyRetentionPoliciesStep;
 import com.linkedin.metadata.boot.steps.BackfillBrowsePathsV2Step;
 import com.linkedin.metadata.boot.steps.IndexDataPlatformsStep;
 import com.linkedin.metadata.boot.steps.IngestDataPlatformInstancesStep;
@@ -84,6 +85,10 @@ public class BootstrapManagerFactory {
   private IngestRetentionPoliciesStep _ingestRetentionPoliciesStep;
 
   @Autowired
+  @Qualifier("applyRetentionPoliciesStep")
+  private ApplyRetentionPoliciesStep _applyRetentionPoliciesStep;
+
+  @Autowired
   @Qualifier("dataHubUpgradeKafkaListener")
   private BootstrapDependency _dataHubUpgradeKafkaListener;
 
@@ -144,6 +149,7 @@ public class BootstrapManagerFactory {
                 ingestDataPlatformsStep,
                 ingestDataPlatformInstancesStep,
                 _ingestRetentionPoliciesStep,
+                _applyRetentionPoliciesStep,
                 ingestOwnershipTypesStep,
                 ingestSettingsStep,
                 restoreGlossaryIndicesStep,
