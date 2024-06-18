@@ -387,11 +387,12 @@ class TrinoSource(SQLAlchemySource):
         self,
         dataset_name: str,
         column: dict,
+        inspector: Inspector,
         pk_constraints: Optional[dict] = None,
         tags: Optional[List[str]] = None,
     ) -> List[SchemaField]:
         fields = super().get_schema_fields_for_column(
-            dataset_name, column, pk_constraints
+            dataset_name, column, inspector, pk_constraints
         )
 
         if isinstance(column["type"], (datatype.ROW, sqltypes.ARRAY, datatype.MAP)):

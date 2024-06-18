@@ -486,7 +486,7 @@ def _select_statement_cll(  # noqa: C901
             # )
 
             # Generate SELECT lineage.
-            direct_raw_col_upstreams = _get_direct_raw_col_upstreams(lineage_node)
+            direct_raw_col_upstreams = _get_direct_raw_col_upstreams(lineage_node, dialect)
 
             # column_logic = lineage_node.source
 
@@ -621,6 +621,7 @@ def _column_level_lineage(
 
 def _get_direct_raw_col_upstreams(
     lineage_node: sqlglot.lineage.Node,
+    dialect: sqlglot.Dialect,
 ) -> Set[_ColumnRef]:
     # Using a set here to deduplicate upstreams.
     direct_raw_col_upstreams: Set[_ColumnRef] = set()
@@ -641,7 +642,7 @@ def _get_direct_raw_col_upstreams(
 
             # Parse the column name out of the node name.
             # Sqlglot calls .sql(), so we have to do the inverse.
-            normalized_col = sqlglot.parse_one(node.name).this.name
+            normalized_col = sqlglot.parse_one(node.name, dialect=dialect).this.name
             if node.subfield:
                 normalized_col = f"{normalized_col}.{node.subfield}"
 

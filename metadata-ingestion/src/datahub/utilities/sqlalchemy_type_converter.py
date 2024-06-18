@@ -4,6 +4,7 @@ import uuid
 from typing import Any, Dict, List, Optional, Type, Union
 
 from sqlalchemy import types
+from sqlalchemy.engine.reflection import Inspector
 
 from datahub.ingestion.extractor.schema_util import avro_schema_to_mce_fields
 from datahub.metadata.com.linkedin.pegasus2avro.schema import SchemaField
@@ -150,6 +151,7 @@ class SqlAlchemyColumnToAvroConverter:
 def get_schema_fields_for_sqlalchemy_column(
     column_name: str,
     column_type: types.TypeEngine,
+    inspector: Inspector,
     description: Optional[str] = None,
     nullable: Optional[bool] = True,
     is_part_of_key: Optional[bool] = False,
@@ -189,7 +191,7 @@ def get_schema_fields_for_sqlalchemy_column(
             SchemaField(
                 fieldPath=column_name,
                 type=SchemaFieldDataTypeClass(type=NullTypeClass()),
-                nativeDataType=str(column_type),
+                nativeDataType=column_type.compile(dialect=inspector.dialect),
             )
         ]
 

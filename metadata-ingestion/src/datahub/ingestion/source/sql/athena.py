@@ -439,12 +439,14 @@ class AthenaSource(SQLAlchemySource):
         self,
         dataset_name: str,
         column: Dict,
+        inspector: Inspector,
         pk_constraints: Optional[dict] = None,
         tags: Optional[List[str]] = None,
     ) -> List[SchemaField]:
         fields = get_schema_fields_for_sqlalchemy_column(
             column_name=column["name"],
             column_type=column["type"],
+            inspector=inspector,
             description=column.get("comment", None),
             nullable=column.get("nullable", True),
             is_part_of_key=True

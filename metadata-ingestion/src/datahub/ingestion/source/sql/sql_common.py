@@ -773,7 +773,7 @@ class SQLAlchemySource(StatefulIngestionSourceBase, TestableSource):
         pk_constraints: dict = inspector.get_pk_constraint(table, schema)
         foreign_keys = self._get_foreign_keys(dataset_urn, inspector, schema, table)
         schema_fields = self.get_schema_fields(
-            dataset_name, columns, pk_constraints, tags=extra_tags
+            dataset_name, columns, inspector, pk_constraints, tags=extra_tags
         )
         schema_metadata = get_schema_metadata(
             self.report,
@@ -950,6 +950,7 @@ class SQLAlchemySource(StatefulIngestionSourceBase, TestableSource):
         self,
         dataset_name: str,
         columns: List[dict],
+        inspector: Inspector,
         pk_constraints: Optional[dict] = None,
         tags: Optional[Dict[str, List[str]]] = None,
     ) -> List[SchemaField]:
@@ -959,7 +960,7 @@ class SQLAlchemySource(StatefulIngestionSourceBase, TestableSource):
             if tags:
                 column_tags = tags.get(column["name"], [])
             fields = self.get_schema_fields_for_column(
-                dataset_name, column, pk_constraints, tags=column_tags
+                dataset_name, column, inspector, pk_constraints, tags=column_tags
             )
             canonical_schema.extend(fields)
         return canonical_schema
@@ -968,6 +969,7 @@ class SQLAlchemySource(StatefulIngestionSourceBase, TestableSource):
         self,
         dataset_name: str,
         column: dict,
+        inspector: Inspector,
         pk_constraints: Optional[dict] = None,
         tags: Optional[List[str]] = None,
     ) -> List[SchemaField]:
@@ -979,7 +981,7 @@ class SQLAlchemySource(StatefulIngestionSourceBase, TestableSource):
         field = SchemaField(
             fieldPath=column["name"],
             type=get_column_type(self.report, dataset_name, column["type"]),
-            nativeDataType=column.get("full_type", repr(column["type"])),
+            nativeDataType=column.get("full_type", column["type"].compile(dialect=inspector.dialect)),
             description=column.get("comment", None),
             nullable=column["nullable"],
             recursive=False,
@@ -1044,7 +1046,7 @@ class SQLAlchemySource(StatefulIngestionSourceBase, TestableSource):
             self.warn(logger, dataset_name, "unable to get schema for this view")
             schema_metadata = None
         else:
-            schema_fields = self.get_schema_fields(dataset_name, columns)
+            schema_fields = self.get_schema_fields(dataset_name, columns, inspector)
             schema_metadata = get_schema_metadata(
                 self.report,
                 dataset_name,
