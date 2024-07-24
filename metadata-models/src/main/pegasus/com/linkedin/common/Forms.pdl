@@ -10,6 +10,18 @@ record Forms {
   /**
    * All incomplete forms assigned to the entity.
    */
+  @Relationship = {
+    "/*/urn": {
+	  "name": "IsAssigned",
+	  "entityTypes": [ "form" ],
+    }
+  }
+  @Relationship = {
+    "/*/form": {
+	  "name": "IsIncomplete",
+	  "entityTypes": [ "form" ],
+    }
+  }
   @Searchable = {
     "/*/urn": {
       "fieldType": "URN",
@@ -33,6 +45,18 @@ record Forms {
   /**
    * All complete forms assigned to the entity.
    */
+  @Relationship = {
+    "/*/urn": {
+	  "name": "IsAssigned",
+	  "entityTypes": [ "form" ],
+    }
+  }
+  @Relationship = {
+    "/*/form": {
+	  "name": "IsCompleted",
+	  "entityTypes": [ "form" ],
+    }
+  }
   @Searchable = {
     "/*/urn": {
       "fieldType": "URN",
@@ -56,6 +80,12 @@ record Forms {
   /**
    * Verifications that have been applied to the entity via completed forms.
    */
+  @Relationship = {
+    "/*/form": {
+	  "name": "IsVerified",
+	  "entityTypes": [ "form" ],
+    }
+  }
   @Searchable = {
     "/*/form": {
       "fieldType": "URN",
