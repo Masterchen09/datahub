@@ -49,6 +49,7 @@ public class SettingsBuilder {
   public static final String TYPE_TABLE = "type_table";
   public static final String DELIMITER = "delimiter";
   public static final String UNIT_SEPARATOR_DELIMITER = "␟";
+  public static final String IGNORE_ABOVE = "ignore_above";
 
   // Analyzers
   public static final String BROWSE_PATH_HIERARCHY_ANALYZER = "browse_path_hierarchy";
@@ -75,11 +76,13 @@ public class SettingsBuilder {
   public static final String DEFAULT_SYN_GRAPH = "default_syn_graph";
   public static final String FLATTEN_GRAPH = "flatten_graph";
   public static final String LOWERCASE = "lowercase";
+  public static final String MAX_LENGTH = "max_length";
   public static final String MIN_LENGTH = "min_length";
   public static final String MULTIFILTER = "multifilter";
   public static final String MULTIFILTER_GRAPH = "multifilter_graph";
   public static final String PARTIAL_URN_COMPONENT = "partial_urn_component";
   public static final String SHINGLE = "shingle";
+  public static final String TRUNCATE = "truncate";
   public static final String WORD_GRAM_2_FILTER = "word_gram_2_filter";
   public static final String WORD_GRAM_3_FILTER = "word_gram_3_filter";
   public static final String WORD_GRAM_4_FILTER = "word_gram_4_filter";
@@ -133,7 +136,8 @@ public class SettingsBuilder {
           SNOWBALL,
           REMOVE_QUOTES,
           UNIQUE,
-          MIN_LENGTH);
+          MIN_LENGTH,
+          TRUNCATE); // MAX_LENGTH
 
   public static final List<String> SEARCH_TOKEN_FILTERS =
       ImmutableList.of(
@@ -147,11 +151,18 @@ public class SettingsBuilder {
           SNOWBALL,
           REMOVE_QUOTES,
           UNIQUE,
-          MIN_LENGTH);
+          MIN_LENGTH,
+          TRUNCATE); // MAX_LENGTH
 
   public static final List<String> QUOTED_TOKEN_FILTERS =
       ImmutableList.of(
-          ASCII_FOLDING, LOWERCASE, REMOVE_QUOTES, DATAHUB_STOP_WORDS, STOP, MIN_LENGTH);
+          ASCII_FOLDING,
+          LOWERCASE,
+          REMOVE_QUOTES,
+          DATAHUB_STOP_WORDS,
+          STOP,
+          MIN_LENGTH,
+          TRUNCATE); // MAX_LENGTH, 
 
   public static final List<String> PARTIAL_AUTOCOMPLETE_TOKEN_FILTERS =
       ImmutableList.of(ASCII_FOLDING, AUTOCOMPLETE_CUSTOM_DELIMITER, LOWERCASE);
@@ -224,8 +235,22 @@ public class SettingsBuilder {
             .build());
 
     filters.put(
+        MAX_LENGTH,
+        ImmutableMap.<String, Object>builder()
+            .put(TYPE, "length")
+            .put("max", "8191") // 32766 / 4
+            .build());
+
+    filters.put(
         MIN_LENGTH,
         ImmutableMap.<String, Object>builder().put(TYPE, "length").put("min", "3").build());
+
+    filters.put(
+        TRUNCATE,
+        ImmutableMap.<String, Object>builder()
+            .put(TYPE, "truncate")
+            .put("length", "8191") // 32766 / 4
+            .build());
 
     Resource stemOverride =
         resourceResolver.getResource("classpath:elasticsearch/stem_override.txt");

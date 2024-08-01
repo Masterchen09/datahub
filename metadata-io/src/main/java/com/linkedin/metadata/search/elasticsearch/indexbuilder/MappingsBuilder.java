@@ -44,7 +44,8 @@ public class MappingsBuilder {
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
-  public static final Map<String, String> KEYWORD_TYPE_MAP = ImmutableMap.of(TYPE, KEYWORD);
+  public static final Map<String, Object> KEYWORD_TYPE_MAP =
+      ImmutableMap.of(TYPE, KEYWORD, IGNORE_ABOVE, "8191"); // 32766 / 4
 
   public static final String SYSTEM_CREATED_FIELD = "systemCreated";
 
@@ -185,7 +186,7 @@ public class MappingsBuilder {
               StructuredPropertyDefinition property = urnProperty.getSecond();
               Map<String, Object> mappingForField = new HashMap<>();
               String valueType = property.getValueType().getId();
-              if (valueType.equalsIgnoreCase(LogicalValueType.STRING.name())) {
+              if (valueType.equalsIgnoreCase(LogicalValueType.STRING.name())) { // TODO: STRING should also be treated as text?
                 mappingForField = getMappingsForKeyword();
               } else if (valueType.equalsIgnoreCase(LogicalValueType.RICH_TEXT.name())) {
                 mappingForField = getMappingsForSearchText(FieldType.TEXT_PARTIAL);
@@ -291,7 +292,9 @@ public class MappingsBuilder {
 
   private static Map<String, Object> getMappingsForSearchText(FieldType fieldType) {
     Map<String, Object> mappingForField = new HashMap<>();
+    // mappingForField.put(TYPE, ESUtils.TEXT_FIELD_TYPE);
     mappingForField.put(TYPE, ESUtils.KEYWORD_FIELD_TYPE);
+    mappingForField.put(IGNORE_ABOVE, "8191"); // 32766 / 4
     mappingForField.put(NORMALIZER, KEYWORD_NORMALIZER);
     Map<String, Object> subFields = new HashMap<>();
     if (fieldType == FieldType.TEXT_PARTIAL || fieldType == FieldType.WORD_GRAM) {
@@ -332,7 +335,7 @@ public class MappingsBuilder {
   }
 
   private static Map<String, Object> getMappingForSearchableRefField(
-      @Nonnull final SearchableRefFieldSpec searchableRefFieldSpec, @Nonnull final int depth) {
+      @Nonnull final SearchableRefFieldSpec searchableRefFieldSpec, @Nonnull final Integer depth) {
     Map<String, Object> mappings = new HashMap<>();
     Map<String, Object> mappingForField = new HashMap<>();
     Map<String, Object> mappingForProperty = new HashMap<>();

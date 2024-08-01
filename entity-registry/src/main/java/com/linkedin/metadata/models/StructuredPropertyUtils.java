@@ -195,7 +195,7 @@ public class StructuredPropertyUtils {
       case DATE:
         return Collections.singleton("long");
       case RICH_TEXT:
-        return Collections.singleton("text");
+        return Collections.singleton("text"); // TODO: STRING should also be treated as text?
       case UNKNOWN:
       case STRING:
       case URN:
