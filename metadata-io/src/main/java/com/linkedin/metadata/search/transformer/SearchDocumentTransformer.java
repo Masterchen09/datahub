@@ -94,6 +94,8 @@ public class SearchDocumentTransformer {
         (key, value) -> setSearchableValue(key, value, searchDocument, forDelete));
     extractedSearchScoreFields.forEach(
         (key, values) -> setSearchScoreValue(key, values, searchDocument, forDelete));
+
+    log.info(searchDocument.toString());
     return Optional.of(searchDocument.toString());
   }
 
@@ -182,6 +184,7 @@ public class SearchDocumentTransformer {
       result = Optional.of(searchDocument);
     }
 
+    log.info(result.toString());
     return result;
   }
 
@@ -208,6 +211,9 @@ public class SearchDocumentTransformer {
                 searchDocument.set(
                     fieldName,
                     JsonNodeFactory.instance.booleanNode((Boolean) firstValue.orElse(false)));
+              } else if (!isArray
+                  && (firstValue.isEmpty() || firstValue.get().toString().isEmpty())) {
+                searchDocument.set(fieldName, JsonNodeFactory.instance.booleanNode(false));
               } else {
                 searchDocument.set(
                     fieldName, JsonNodeFactory.instance.booleanNode(!fieldValues.isEmpty()));
@@ -274,7 +280,7 @@ public class SearchDocumentTransformer {
                     .forEach(
                         v -> {
                           if (!v.isEmpty()) {
-                            values.add(v);
+                            values.add(getFilteredFieldValue(v));
                           }
                         });
                 dictDoc.set(key, values);
@@ -288,13 +294,15 @@ public class SearchDocumentTransformer {
               fieldValue -> {
                 String[] keyValues = fieldValue.toString().split("=");
                 String key = keyValues[0];
-                String value = keyValues[1];
+                String value = getFilteredFieldValue(keyValues[1]);
                 dictDoc.put(key, value);
               });
       searchDocument.set(fieldName, dictDoc);
     } else if (!fieldValues.isEmpty()) {
       getNodeForValue(valueType, fieldValues.get(0), fieldType)
           .ifPresent(node -> searchDocument.set(fieldName, node));
+    } else {
+      searchDocument.set(fieldName, JsonNodeFactory.instance.nullNode());
     }
   }
 
@@ -354,14 +362,15 @@ public class SearchDocumentTransformer {
         return Optional.of(JsonNodeFactory.instance.numberNode((Double) fieldValue));
         // By default run toString
       default:
-        String value = fieldValue.toString();
+        String value = getFilteredFieldValue(fieldValue.toString());
         // If index type is BROWSE_PATH, make sure the value starts with a slash
         if (fieldType == FieldType.BROWSE_PATH && !value.startsWith("/")) {
           value = "/" + value;
         }
+
         return value.isEmpty()
-            ? Optional.empty()
-            : Optional.of(JsonNodeFactory.instance.textNode(fieldValue.toString()));
+            ? Optional.of(JsonNodeFactory.instance.nullNode())
+            : Optional.of(JsonNodeFactory.instance.textNode(value));
     }
   }
 
@@ -459,7 +468,8 @@ public class SearchDocumentTransformer {
                                         case UNKNOWN:
                                           log.warn(
                                               "Unable to transform UNKNOWN logical value type.");
-                                          searchValue = Optional.empty();
+                                          searchValue =
+                                              Optional.of(JsonNodeFactory.instance.nullNode());
                                           break;
                                         case NUMBER:
                                           Double doubleValue =
@@ -473,10 +483,11 @@ public class SearchDocumentTransformer {
                                         default:
                                           searchValue =
                                               propertyValue.getString().isEmpty()
-                                                  ? Optional.empty()
+                                                  ? Optional.of(JsonNodeFactory.instance.nullNode())
                                                   : Optional.of(
                                                       JsonNodeFactory.instance.textNode(
-                                                          propertyValue.getString()));
+                                                          getFilteredFieldValue(
+                                                              propertyValue.getString())));
                                           break;
                                       }
                                       searchValue.ifPresent(arrayNode::add);
@@ -528,10 +539,10 @@ public class SearchDocumentTransformer {
 
     if (depth == 0) {
       if (fieldValue.toString().isEmpty()) {
-        return Optional.empty();
-      } else {
-        return Optional.of(JsonNodeFactory.instance.textNode(fieldValue.toString()));
+        return Optional.of(JsonNodeFactory.instance.nullNode());
       }
+
+      return Optional.of(JsonNodeFactory.instance.textNode(fieldValue.toString()));
     }
     if (fieldType == FieldType.URN) {
       ObjectNode resultNode = JsonNodeFactory.instance.objectNode();
@@ -542,7 +553,7 @@ public class SearchDocumentTransformer {
         Optional<Aspect> entityKeyAspect =
             Optional.ofNullable(aspectRetriever.getLatestAspectObject(eAUrn, entityKeyAspectName));
         if (entityKeyAspect.isEmpty()) {
-          return Optional.ofNullable(JsonNodeFactory.instance.nullNode());
+          return Optional.of(JsonNodeFactory.instance.nullNode());
         }
         resultNode.set("urn", JsonNodeFactory.instance.textNode(fieldValue.toString()));
         EntitySpec entitySpec = entityRegistry.getEntitySpec(entityType);
@@ -564,9 +575,7 @@ public class SearchDocumentTransformer {
                   extractedSearchableFields.entrySet()) {
                 SearchableFieldSpec spec = entry.getKey();
                 List<Object> value = entry.getValue();
-                if (!value.isEmpty()) {
-                  setSearchableValue(spec, value, resultNode, false);
-                }
+                setSearchableValue(spec, value, resultNode, false);
               }
 
               // Extract searchable ref fields and create node using getNodeForRef
@@ -622,5 +631,9 @@ public class SearchDocumentTransformer {
       }
     }
     return Optional.empty();
+  }
+
+  private String getFilteredFieldValue(@Nonnull String value) {
+    return value.replaceAll("!\\[\\]\\((data:image\\/[^;]+;base64[^\"]+)\\)", ""); // TODO: Whitespace vs. no whitespace?
   }
 }

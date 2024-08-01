@@ -117,6 +117,10 @@ class SupersetConfig(
         description="Can be used to change mapping for database names in superset to what you have in datahub",
     )
 
+    ingest_published_dashboards_only: bool = Field(
+        default=False, description="Ingest only published dashboards."
+    )
+
     @validator("connect_uri", "display_uri")
     def remove_trailing_slash(cls, v):
         return config_clean.remove_trailing_slashes(v)
