@@ -24,7 +24,7 @@ public class GlossaryTermInfoChangeEventGenerator
     extends EntityChangeEventGenerator<GlossaryTermInfo> {
   private static List<ChangeEvent> computeDiffs(
       GlossaryTermInfo baseDatasetProperties,
-      @Nonnull GlossaryTermInfo targetDatasetProperties,
+      GlossaryTermInfo targetDatasetProperties,
       @Nonnull String entityUrn,
       AuditStamp auditStamp) {
     List<ChangeEvent> changeEvents = new ArrayList<>();

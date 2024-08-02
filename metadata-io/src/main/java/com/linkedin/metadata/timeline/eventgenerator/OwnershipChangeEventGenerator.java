@@ -5,10 +5,11 @@ import static com.linkedin.metadata.Constants.*;
 import com.datahub.util.RecordUtils;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.linkedin.common.AuditStamp;
-import com.linkedin.common.Owner;
-import com.linkedin.common.OwnerArray;
+// import com.linkedin.common.Owner;
 import com.linkedin.common.Ownership;
+import com.linkedin.common.OwnershipType;
 import com.linkedin.common.urn.Urn;
+import com.linkedin.metadata.Constants;
 import com.linkedin.metadata.entity.EntityAspect;
 import com.linkedin.metadata.timeline.data.ChangeCategory;
 import com.linkedin.metadata.timeline.data.ChangeEvent;
@@ -16,149 +17,234 @@ import com.linkedin.metadata.timeline.data.ChangeOperation;
 import com.linkedin.metadata.timeline.data.ChangeTransaction;
 import com.linkedin.metadata.timeline.data.SemanticChangeType;
 import com.linkedin.metadata.timeline.data.entity.OwnerChangeEvent;
+import com.linkedin.util.Pair;
 import java.util.ArrayList;
 import java.util.Comparator;
+// import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 public class OwnershipChangeEventGenerator extends EntityChangeEventGenerator<Ownership> {
-  private static final String OWNER_ADDED_FORMAT = "'%s' added as a `%s` of '%s'.";
-  private static final String OWNER_REMOVED_FORMAT = "'%s' removed as a `%s` of '%s'.";
-  private static final String OWNERSHIP_TYPE_CHANGE_FORMAT =
-      "'%s''s ownership type changed from '%s' to '%s' for '%s'.";
+  private static final String OWNER_ADDED_FORMAT = "'%s' added as a '%s' of '%s'.";
+  private static final String OWNER_REMOVED_FORMAT = "'%s' removed as a '%s' of '%s'.";
+  // private static final String OWNERSHIP_TYPE_ADDED_FORMAT = "'%s' added as a
+  // '%s' of '%s'.";
+  // private static final String OWNERSHIP_TYPE_REMOVED_FORMAT = "'%s' removed as
+  // a '%s' of '%s'.";
 
   private static List<ChangeEvent> computeDiffs(
-      Ownership baseOwnership, Ownership targetOwnership, String entityUrn, AuditStamp auditStamp) {
+      Ownership baseOwnership,
+      Ownership targetOwnership,
+      @Nonnull String entityUrn,
+      AuditStamp auditStamp) {
     List<ChangeEvent> changeEvents = new ArrayList<>();
 
-    sortOwnersByUrn(baseOwnership);
-    sortOwnersByUrn(targetOwnership);
-    OwnerArray baseOwners = (baseOwnership != null) ? baseOwnership.getOwners() : new OwnerArray();
-    OwnerArray targetOwners =
-        (targetOwnership != null) ? targetOwnership.getOwners() : new OwnerArray();
+    // HashSet<Urn> baseOwnerUrns = (baseOwnership != null)
+    // ? new HashSet<>(
+    // baseOwnership.getOwners().stream()
+    // .map(Owner::getOwner)
+    // .collect(Collectors.toCollection(HashSet::new)))
+    // : new HashSet<>();
 
-    int baseOwnerIdx = 0;
-    int targetOwnerIdx = 0;
-    while (baseOwnerIdx < baseOwners.size() && targetOwnerIdx < targetOwners.size()) {
-      Owner baseOwner = baseOwners.get(baseOwnerIdx);
-      Owner targetOwner = targetOwners.get(targetOwnerIdx);
-      int comparison = baseOwner.getOwner().toString().compareTo(targetOwner.getOwner().toString());
-      if (comparison == 0) {
-        if (!baseOwner.getType().equals(targetOwner.getType())) {
-          // Ownership type has changed.
-          changeEvents.add(
-              OwnerChangeEvent.entityOwnerChangeEventBuilder()
-                  .modifier(targetOwner.getType().name())
-                  .entityUrn(entityUrn)
-                  .category(ChangeCategory.OWNER)
-                  .operation(ChangeOperation.MODIFY)
-                  .semVerChange(SemanticChangeType.PATCH)
-                  .description(
-                      String.format(
-                          OWNERSHIP_TYPE_CHANGE_FORMAT,
-                          baseOwner.getOwner().getId(),
-                          baseOwner.getType(),
-                          targetOwner.getType(),
-                          entityUrn))
-                  .ownerUrn(targetOwner.getOwner())
-                  .ownerType(targetOwner.getType())
-                  .ownerTypeUrn(targetOwner.getTypeUrn())
-                  .auditStamp(auditStamp)
-                  .build());
-        }
-        ++baseOwnerIdx;
-        ++targetOwnerIdx;
-      } else if (comparison < 0) {
-        // Owner got removed
-        changeEvents.add(
-            OwnerChangeEvent.entityOwnerChangeEventBuilder()
-                .modifier(baseOwner.getOwner().toString())
-                .entityUrn(entityUrn)
-                .category(ChangeCategory.OWNER)
-                .operation(ChangeOperation.REMOVE)
-                .semVerChange(SemanticChangeType.MINOR)
-                .description(
-                    String.format(
-                        OWNER_REMOVED_FORMAT,
-                        baseOwner.getOwner().getId(),
-                        baseOwner.getType(),
-                        entityUrn))
-                .ownerUrn(baseOwner.getOwner())
-                .ownerType(baseOwner.getType())
-                .ownerTypeUrn(baseOwner.getTypeUrn())
-                .auditStamp(auditStamp)
-                .build());
-        ++baseOwnerIdx;
-      } else {
-        // Owner got added.
-        changeEvents.add(
-            OwnerChangeEvent.entityOwnerChangeEventBuilder()
-                .modifier(targetOwner.getOwner().toString())
-                .entityUrn(entityUrn)
-                .category(ChangeCategory.OWNER)
-                .operation(ChangeOperation.ADD)
-                .semVerChange(SemanticChangeType.MINOR)
-                .description(
-                    String.format(
-                        OWNER_ADDED_FORMAT,
-                        targetOwner.getOwner().getId(),
-                        targetOwner.getType(),
-                        entityUrn))
-                .ownerUrn(targetOwner.getOwner())
-                .ownerType(targetOwner.getType())
-                .ownerTypeUrn(targetOwner.getTypeUrn())
-                .auditStamp(auditStamp)
-                .build());
-        ++targetOwnerIdx;
-      }
-    }
+    // HashSet<Urn> targetGlobalTagUrns = (targetOwnership != null)
+    // ? new HashSet<>(
+    // targetOwnership.getOwners().stream()
+    // .map(Owner::getOwner)
+    // .collect(Collectors.toCollection(HashSet::new)))
+    // : new HashSet<>();
 
-    while (baseOwnerIdx < baseOwners.size()) {
-      // Handle removed owners.
-      Owner baseOwner = baseOwners.get(baseOwnerIdx);
-      changeEvents.add(
-          OwnerChangeEvent.entityOwnerChangeEventBuilder()
-              .modifier(baseOwner.getOwner().toString())
-              .entityUrn(entityUrn)
-              .category(ChangeCategory.OWNER)
-              .operation(ChangeOperation.REMOVE)
-              .semVerChange(SemanticChangeType.MINOR)
-              .description(
-                  String.format(
-                      OWNER_REMOVED_FORMAT,
-                      baseOwner.getOwner().getId(),
-                      baseOwner.getType(),
-                      entityUrn))
-              .ownerUrn(baseOwner.getOwner())
-              .ownerType(baseOwner.getType())
-              .ownerTypeUrn(baseOwner.getTypeUrn())
-              .auditStamp(auditStamp)
-              .build());
-      ++baseOwnerIdx;
-    }
-    while (targetOwnerIdx < targetOwners.size()) {
-      // Newly added owners.
-      Owner targetOwner = targetOwners.get(targetOwnerIdx);
-      changeEvents.add(
-          OwnerChangeEvent.entityOwnerChangeEventBuilder()
-              .modifier(targetOwner.getOwner().toString())
-              .entityUrn(entityUrn)
-              .category(ChangeCategory.OWNER)
-              .operation(ChangeOperation.ADD)
-              .semVerChange(SemanticChangeType.MINOR)
-              .description(
-                  String.format(
-                      OWNER_ADDED_FORMAT,
-                      targetOwner.getOwner().getId(),
-                      targetOwner.getType(),
-                      entityUrn))
-              .ownerUrn(targetOwner.getOwner())
-              .ownerType(targetOwner.getType())
-              .ownerTypeUrn(targetOwner.getTypeUrn())
-              .auditStamp(auditStamp)
-              .build());
-      ++targetOwnerIdx;
-    }
+    HashSet<Pair<Urn, Urn>> baseOwners = (baseOwnership != null)
+        ? new HashSet<>(
+            baseOwnership.getOwners().stream()
+                .map(
+                    owner -> {
+                      Urn ownerTypeUrn = owner.getTypeUrn();
+                      if (ownerTypeUrn == null) {
+                        ownerTypeUrn = mapOwnershipTypeToEntity(owner.getType().name());
+                      }
+
+                      return Pair.of(owner.getOwner(), ownerTypeUrn);
+                    })
+                .collect(Collectors.toCollection(HashSet::new)))
+        : new HashSet<>();
+
+    HashSet<Pair<Urn, Urn>> targetOwners = (targetOwnership != null)
+        ? new HashSet<>(
+            targetOwnership.getOwners().stream()
+                .map(
+                    owner -> {
+                      Urn ownerTypeUrn = owner.getTypeUrn();
+                      if (ownerTypeUrn == null) {
+                        ownerTypeUrn = mapOwnershipTypeToEntity(owner.getType().name());
+                      }
+
+                      return Pair.of(owner.getOwner(), ownerTypeUrn);
+                    })
+                .collect(Collectors.toCollection(HashSet::new)))
+        : new HashSet<>();
+
+    // HashMap<Urn, HashSet<Urn>> baseOwnersMap = new HashMap<>();
+    // if (baseOwnership != null) {
+    // baseOwnership
+    // .getOwners()
+    // .forEach(
+    // (owner) -> {
+    // var ownerUrn = owner.getOwner();
+    // if (!baseOwnersMap.containsKey(ownerUrn)) {
+    // baseOwnersMap.put(ownerUrn, new HashSet<>());
+    // }
+
+    // Urn ownerTypeUrn = owner.getTypeUrn();
+    // if (ownerTypeUrn == null) {
+    // ownerTypeUrn = Urn.createFromTuple(
+    // Constants.OWNERSHIP_TYPE_ENTITY_NAME,
+    // SYSTEM_ID + owner.getType().name().toLowerCase());
+    // }
+
+    // baseOwnersMap.get(ownerUrn).add(ownerTypeUrn);
+    // });
+    // }
+
+    // HashMap<Urn, HashSet<Urn>> targetOwnersMap = new HashMap<>();
+    // if (targetOwnership != null) {
+    // targetOwnership
+    // .getOwners()
+    // .forEach(
+    // (owner) -> {
+    // var ownerUrn = owner.getOwner();
+    // if (!targetOwnersMap.containsKey(ownerUrn)) {
+    // targetOwnersMap.put(ownerUrn, new HashSet<>());
+    // }
+
+    // Urn ownerTypeUrn = owner.getTypeUrn();
+    // if (ownerTypeUrn == null) {
+    // ownerTypeUrn = Urn.createFromTuple(
+    // Constants.OWNERSHIP_TYPE_ENTITY_NAME,
+    // SYSTEM_ID + owner.getType().name().toLowerCase());
+    // }
+
+    // targetOwnersMap.get(ownerUrn).add(ownerTypeUrn);
+    // });
+    // }
+
+    baseOwners.stream()
+        .filter(owner -> !targetOwners.contains(owner))
+        .sorted(
+            Comparator.comparing((Pair<Urn, Urn> owner) -> owner.getFirst().toString())
+                .thenComparing(Comparator.comparing(owner -> owner.getSecond().toString())))
+        .forEach(
+            (owner) -> {
+              Urn ownerUrn = owner.getFirst();
+              Urn ownerTypeUrn = owner.getSecond();
+
+              changeEvents.add(
+                  OwnerChangeEvent.entityOwnerChangeEventBuilder()
+                      .modifier(ownerUrn.toString())
+                      .entityUrn(entityUrn)
+                      .category(ChangeCategory.OWNER)
+                      .operation(ChangeOperation.REMOVE)
+                      .semVerChange(SemanticChangeType.MINOR)
+                      .description(
+                          String.format(
+                              OWNER_REMOVED_FORMAT,
+                              ownerUrn.getId(),
+                              ownerTypeUrn.getId(),
+                              entityUrn))
+                      .ownerUrn(ownerUrn)
+                      .ownerType(OwnershipType.CUSTOM)
+                      .ownerTypeUrn(ownerTypeUrn)
+                      .auditStamp(auditStamp)
+                      .build());
+            });
+
+    targetOwners.stream()
+        .filter(owner -> !baseOwners.contains(owner))
+        .sorted(
+            Comparator.comparing((Pair<Urn, Urn> owner) -> owner.getFirst().toString())
+                .thenComparing(Comparator.comparing(owner -> owner.getSecond().toString())))
+        .forEach(
+            (owner) -> {
+              Urn ownerUrn = owner.getFirst();
+              Urn ownerTypeUrn = owner.getSecond();
+
+              changeEvents.add(
+                  OwnerChangeEvent.entityOwnerChangeEventBuilder()
+                      .modifier(ownerUrn.toString())
+                      .entityUrn(entityUrn)
+                      .category(ChangeCategory.OWNER)
+                      .operation(ChangeOperation.ADD)
+                      .semVerChange(SemanticChangeType.MINOR)
+                      .description(
+                          String.format(
+                              OWNER_ADDED_FORMAT,
+                              ownerUrn.getId(),
+                              ownerTypeUrn.getId(),
+                              entityUrn))
+                      .ownerUrn(ownerUrn)
+                      .ownerType(OwnershipType.CUSTOM)
+                      .ownerTypeUrn(ownerTypeUrn)
+                      .auditStamp(auditStamp)
+                      .build());
+            });
+
+    // baseOwnersMap.keySet().stream()
+    // .filter(ownerUrn -> targetOwnersMap.containsKey(ownerUrn))
+    // .sorted(Comparator.comparing(Urn::toString))
+    // .forEach(ownerUrn -> {
+    // HashSet<Urn> baseOwnerTypeUrns = baseOwnersMap.get(ownerUrn);
+    // HashSet<Urn> targetOwnerTypeUrns = targetOwnersMap.get(ownerUrn);
+
+    // baseOwnerTypeUrns.stream()
+    // .filter(ownerTypeUrn -> !targetOwnerTypeUrns.contains(ownerTypeUrn))
+    // .sorted(Comparator.comparing(Urn::toString))
+    // .forEach(ownerTypeUrn -> {
+    // changeEvents.add(
+    // OwnerChangeEvent.entityOwnerChangeEventBuilder()
+    // .modifier(ownerTypeUrn.toString())
+    // .entityUrn(entityUrn)
+    // .category(ChangeCategory.OWNER)
+    // .operation(ChangeOperation.MODIFY)
+    // .semVerChange(SemanticChangeType.PATCH)
+    // .description(
+    // String.format(
+    // OWNERSHIP_TYPE_ADDED_FORMAT,
+    // ownerUrn.getId(),
+    // ownerTypeUrn.getId(),
+    // entityUrn))
+    // .ownerUrn(ownerUrn)
+    // .ownerType(OwnershipType.CUSTOM)
+    // .ownerTypeUrn(ownerTypeUrn)
+    // .auditStamp(auditStamp)
+    // .build());
+    // });
+
+    // targetOwnerTypeUrns.stream()
+    // .filter(ownerTypeUrn -> baseOwnerTypeUrns.contains(ownerTypeUrn))
+    // .sorted(Comparator.comparing(Urn::toString))
+    // .forEach(ownerTypeUrn -> {
+    // changeEvents.add(
+    // OwnerChangeEvent.entityOwnerChangeEventBuilder()
+    // .modifier(ownerTypeUrn.toString())
+    // .entityUrn(entityUrn)
+    // .category(ChangeCategory.OWNER)
+    // .operation(ChangeOperation.MODIFY)
+    // .semVerChange(SemanticChangeType.PATCH)
+    // .description(
+    // String.format(
+    // OWNERSHIP_TYPE_REMOVED_FORMAT,
+    // ownerUrn.getId(),
+    // ownerTypeUrn.getId(),
+    // entityUrn))
+    // .ownerUrn(ownerUrn)
+    // .ownerType(OwnershipType.CUSTOM)
+    // .ownerTypeUrn(ownerTypeUrn)
+    // .auditStamp(auditStamp)
+    // .build());
+    // });
+    // });
+
     return changeEvents;
   }
 
@@ -167,15 +253,6 @@ public class OwnershipChangeEventGenerator extends EntityChangeEventGenerator<Ow
       return RecordUtils.toRecordTemplate(Ownership.class, entityAspect.getMetadata());
     }
     return null;
-  }
-
-  private static void sortOwnersByUrn(Ownership ownership) {
-    if (ownership == null) {
-      return;
-    }
-    List<Owner> owners = new ArrayList<>(ownership.getOwners());
-    owners.sort(Comparator.comparing(Owner::getOwner, Comparator.comparing(Urn::toString)));
-    ownership.setOwners(new OwnerArray(owners));
   }
 
   @Override
@@ -205,11 +282,12 @@ public class OwnershipChangeEventGenerator extends EntityChangeEventGenerator<Ow
     }
 
     // Assess the highest change at the transaction(schema) level.
-    // Why isn't this done at changeevent level - what if transaction contains multiple category
+    // Why isn't this done at changeevent level - what if transaction contains
+    // multiple category
     // events?
     SemanticChangeType highestSemanticChange = SemanticChangeType.NONE;
-    ChangeEvent highestChangeEvent =
-        changeEvents.stream().max(Comparator.comparing(ChangeEvent::getSemVerChange)).orElse(null);
+    ChangeEvent highestChangeEvent = changeEvents.stream().max(Comparator.comparing(ChangeEvent::getSemVerChange))
+        .orElse(null);
     if (highestChangeEvent != null) {
       highestSemanticChange = highestChangeEvent.getSemVerChange();
     }
@@ -232,5 +310,10 @@ public class OwnershipChangeEventGenerator extends EntityChangeEventGenerator<Ow
       @Nonnull Aspect<Ownership> to,
       @Nonnull AuditStamp auditStamp) {
     return computeDiffs(from.getValue(), to.getValue(), urn.toString(), auditStamp);
+  }
+
+  private static Urn mapOwnershipTypeToEntity(String type) {
+    final String typeName = SYSTEM_ID + type.toLowerCase();
+    return Urn.createFromTuple(Constants.OWNERSHIP_TYPE_ENTITY_NAME, typeName);
   }
 }

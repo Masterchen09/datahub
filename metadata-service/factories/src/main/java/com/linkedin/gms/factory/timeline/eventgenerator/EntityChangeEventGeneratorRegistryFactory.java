@@ -69,11 +69,23 @@ public class EntityChangeEventGeneratorRegistryFactory {
     registry.register(DATA_JOB_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
     registry.register(DOMAIN_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
     registry.register(TAG_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
+    registry.register(GLOSSARY_NODE_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
     registry.register(GLOSSARY_TERM_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
     registry.register(CORP_GROUP_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
     registry.register(STATUS_ASPECT_NAME, new StatusChangeEventGenerator());
     registry.register(DEPRECATION_ASPECT_NAME, new DeprecationChangeEventGenerator());
     registry.register(BUSINESS_ATTRIBUTE_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
+    registry.register(ML_MODEL_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
+    registry.register(ML_MODEL_GROUP_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
+    registry.register(ML_MODEL_DEPLOYMENT_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
+    registry.register(ML_FEATURE_TABLE_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
+    registry.register(ML_FEATURE_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
+    registry.register(ML_PRIMARY_KEY_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
+    registry.register(NOTEBOOK_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
+    registry.register(INCIDENT_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
+    registry.register(POST_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
+    registry.register(DATA_PRODUCT_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
+    registry.register(DATA_CONTRACT_KEY_ASPECT_NAME, new EntityKeyChangeEventGenerator<>());
 
     // Assertion differs
     registry.register(ASSERTION_RUN_EVENT_ASPECT_NAME, new AssertionRunEventChangeEventGenerator());
@@ -83,8 +95,6 @@ public class EntityChangeEventGeneratorRegistryFactory {
         DATA_PROCESS_INSTANCE_RUN_EVENT_ASPECT_NAME,
         new DataProcessInstanceRunEventChangeEventGenerator(
             systemOperationContext, systemEntityClient));
-
-    // TODO: Add ML models.
 
     return registry;
   }

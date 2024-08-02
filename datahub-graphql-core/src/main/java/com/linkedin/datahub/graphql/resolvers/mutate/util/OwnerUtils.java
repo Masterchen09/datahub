@@ -1,6 +1,7 @@
 package com.linkedin.datahub.graphql.resolvers.mutate.util;
 
 import static com.linkedin.datahub.graphql.resolvers.mutate.MutationUtils.*;
+import static com.linkedin.metadata.Constants.*;
 
 import com.datahub.authorization.ConjunctivePrivilegeGroup;
 import com.datahub.authorization.DisjunctivePrivilegeGroup;
@@ -39,7 +40,6 @@ public class OwnerUtils {
   private static final ConjunctivePrivilegeGroup ALL_PRIVILEGES_GROUP =
       new ConjunctivePrivilegeGroup(
           ImmutableList.of(PoliciesConfig.EDIT_ENTITY_PRIVILEGE.getType()));
-  public static final String SYSTEM_ID = "__system__";
 
   private OwnerUtils() {}
 

@@ -6,7 +6,6 @@ import com.datahub.util.RecordUtils;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.linkedin.common.AuditStamp;
 import com.linkedin.common.GlossaryTermAssociation;
-import com.linkedin.common.GlossaryTermAssociationArray;
 import com.linkedin.common.GlossaryTerms;
 import com.linkedin.common.urn.Urn;
 import com.linkedin.metadata.entity.EntityAspect;
@@ -18,7 +17,9 @@ import com.linkedin.metadata.timeline.data.SemanticChangeType;
 import com.linkedin.metadata.timeline.data.entity.GlossaryTermChangeEvent;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 public class GlossaryTermsChangeEventGenerator extends EntityChangeEventGenerator<GlossaryTerms> {
@@ -28,127 +29,65 @@ public class GlossaryTermsChangeEventGenerator extends EntityChangeEventGenerato
   public static List<ChangeEvent> computeDiffs(
       GlossaryTerms baseGlossaryTerms,
       GlossaryTerms targetGlossaryTerms,
-      String entityUrn,
+      @Nonnull String entityUrn,
       AuditStamp auditStamp) {
     List<ChangeEvent> changeEvents = new ArrayList<>();
 
-    sortGlossaryTermsByGlossaryTermUrn(baseGlossaryTerms);
-    sortGlossaryTermsByGlossaryTermUrn(targetGlossaryTerms);
-
-    GlossaryTermAssociationArray baseTerms =
+    HashSet<Urn> baseGlossaryTermUrns =
         (baseGlossaryTerms != null)
-            ? baseGlossaryTerms.getTerms()
-            : new GlossaryTermAssociationArray();
-    GlossaryTermAssociationArray targetTerms =
+            ? new HashSet<>(
+                baseGlossaryTerms.getTerms().stream()
+                    .map(GlossaryTermAssociation::getUrn)
+                    .collect(Collectors.toCollection(HashSet::new)))
+            : new HashSet<>();
+
+    HashSet<Urn> targetGlossaryTermUrns =
         (targetGlossaryTerms != null)
-            ? targetGlossaryTerms.getTerms()
-            : new GlossaryTermAssociationArray();
+            ? new HashSet<>(
+                targetGlossaryTerms.getTerms().stream()
+                    .map(GlossaryTermAssociation::getUrn)
+                    .collect(Collectors.toCollection(HashSet::new)))
+            : new HashSet<>();
 
-    int baseGlossaryTermIdx = 0;
-    int targetGlossaryTermIdx = 0;
-    while (baseGlossaryTermIdx < baseTerms.size() && targetGlossaryTermIdx < targetTerms.size()) {
-      GlossaryTermAssociation baseGlossaryTermAssociation = baseTerms.get(baseGlossaryTermIdx);
-      GlossaryTermAssociation targetGlossaryTermAssociation =
-          targetTerms.get(targetGlossaryTermIdx);
-      int comparison =
-          baseGlossaryTermAssociation
-              .getUrn()
-              .toString()
-              .compareTo(targetGlossaryTermAssociation.getUrn().toString());
-      if (comparison == 0) {
-        ++baseGlossaryTermIdx;
-        ++targetGlossaryTermIdx;
-      } else if (comparison < 0) {
-        // GlossaryTerm got removed.
-        changeEvents.add(
-            GlossaryTermChangeEvent.entityGlossaryTermChangeEventBuilder()
-                .modifier(baseGlossaryTermAssociation.getUrn().toString())
-                .entityUrn(entityUrn)
-                .category(ChangeCategory.GLOSSARY_TERM)
-                .operation(ChangeOperation.REMOVE)
-                .semVerChange(SemanticChangeType.MINOR)
-                .description(
-                    String.format(
-                        GLOSSARY_TERM_REMOVED_FORMAT,
-                        baseGlossaryTermAssociation.getUrn().getId(),
-                        entityUrn))
-                .termUrn(baseGlossaryTermAssociation.getUrn())
-                .auditStamp(auditStamp)
-                .build());
-        ++baseGlossaryTermIdx;
-      } else {
-        // GlossaryTerm got added.
-        changeEvents.add(
-            GlossaryTermChangeEvent.entityGlossaryTermChangeEventBuilder()
-                .modifier(targetGlossaryTermAssociation.getUrn().toString())
-                .entityUrn(entityUrn)
-                .category(ChangeCategory.GLOSSARY_TERM)
-                .operation(ChangeOperation.ADD)
-                .semVerChange(SemanticChangeType.MINOR)
-                .description(
-                    String.format(
-                        GLOSSARY_TERM_ADDED_FORMAT,
-                        targetGlossaryTermAssociation.getUrn().getId(),
-                        entityUrn))
-                .termUrn(targetGlossaryTermAssociation.getUrn())
-                .auditStamp(auditStamp)
-                .build());
-        ++targetGlossaryTermIdx;
-      }
-    }
+    baseGlossaryTermUrns.stream()
+        .filter(termAssociation -> !targetGlossaryTermUrns.contains(termAssociation))
+        .sorted(Comparator.comparing(Urn::toString))
+        .forEach(
+            (termUrn) -> {
+              changeEvents.add(
+                  GlossaryTermChangeEvent.entityGlossaryTermChangeEventBuilder()
+                      .modifier(termUrn.toString())
+                      .entityUrn(entityUrn)
+                      .category(ChangeCategory.GLOSSARY_TERM)
+                      .operation(ChangeOperation.REMOVE)
+                      .semVerChange(SemanticChangeType.MINOR)
+                      .description(
+                          String.format(GLOSSARY_TERM_REMOVED_FORMAT, termUrn.getId(), entityUrn))
+                      .termUrn(termUrn)
+                      .auditStamp(auditStamp)
+                      .build());
+            });
 
-    while (baseGlossaryTermIdx < baseTerms.size()) {
-      // Handle removed glossary terms.
-      GlossaryTermAssociation baseGlossaryTermAssociation = baseTerms.get(baseGlossaryTermIdx);
-      changeEvents.add(
-          GlossaryTermChangeEvent.entityGlossaryTermChangeEventBuilder()
-              .modifier(baseGlossaryTermAssociation.getUrn().toString())
-              .entityUrn(entityUrn)
-              .category(ChangeCategory.GLOSSARY_TERM)
-              .operation(ChangeOperation.REMOVE)
-              .semVerChange(SemanticChangeType.MINOR)
-              .description(
-                  String.format(
-                      GLOSSARY_TERM_REMOVED_FORMAT,
-                      baseGlossaryTermAssociation.getUrn().getId(),
-                      entityUrn))
-              .termUrn(baseGlossaryTermAssociation.getUrn())
-              .auditStamp(auditStamp)
-              .build());
-      ++baseGlossaryTermIdx;
-    }
-    while (targetGlossaryTermIdx < targetTerms.size()) {
-      // Handle newly added glossary terms.
-      GlossaryTermAssociation targetGlossaryTermAssociation =
-          targetTerms.get(targetGlossaryTermIdx);
-      changeEvents.add(
-          GlossaryTermChangeEvent.entityGlossaryTermChangeEventBuilder()
-              .modifier(targetGlossaryTermAssociation.getUrn().toString())
-              .entityUrn(entityUrn)
-              .category(ChangeCategory.GLOSSARY_TERM)
-              .operation(ChangeOperation.ADD)
-              .semVerChange(SemanticChangeType.MINOR)
-              .description(
-                  String.format(
-                      GLOSSARY_TERM_ADDED_FORMAT,
-                      targetGlossaryTermAssociation.getUrn().getId(),
-                      entityUrn))
-              .termUrn(targetGlossaryTermAssociation.getUrn())
-              .auditStamp(auditStamp)
-              .build());
-      ++targetGlossaryTermIdx;
-    }
+    targetGlossaryTermUrns.stream()
+        .filter(termUrn -> !baseGlossaryTermUrns.contains(termUrn))
+        .sorted(Comparator.comparing(Urn::toString))
+        .forEach(
+            (termUrn) -> {
+              changeEvents.add(
+                  GlossaryTermChangeEvent.entityGlossaryTermChangeEventBuilder()
+                      .modifier(termUrn.toString())
+                      .entityUrn(entityUrn)
+                      .category(ChangeCategory.GLOSSARY_TERM)
+                      .operation(ChangeOperation.ADD)
+                      .semVerChange(SemanticChangeType.MINOR)
+                      .description(
+                          String.format(GLOSSARY_TERM_ADDED_FORMAT, termUrn.getId(), entityUrn))
+                      .termUrn(termUrn)
+                      .auditStamp(auditStamp)
+                      .build());
+            });
+
     return changeEvents;
-  }
-
-  private static void sortGlossaryTermsByGlossaryTermUrn(GlossaryTerms globalGlossaryTerms) {
-    if (globalGlossaryTerms == null) {
-      return;
-    }
-    List<GlossaryTermAssociation> glossaryTerms = new ArrayList<>(globalGlossaryTerms.getTerms());
-    glossaryTerms.sort(
-        Comparator.comparing(GlossaryTermAssociation::getUrn, Comparator.comparing(Urn::toString)));
-    globalGlossaryTerms.setTerms(new GlossaryTermAssociationArray(glossaryTerms));
   }
 
   private static GlossaryTerms getGlossaryTermsFromAspect(EntityAspect entityAspect) {

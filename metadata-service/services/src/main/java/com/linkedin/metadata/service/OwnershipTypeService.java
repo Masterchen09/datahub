@@ -1,5 +1,7 @@
 package com.linkedin.metadata.service;
 
+import static com.linkedin.metadata.Constants.*;
+
 import com.google.common.collect.ImmutableSet;
 import com.linkedin.common.AuditStamp;
 import com.linkedin.common.Status;
@@ -31,8 +33,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class OwnershipTypeService extends BaseService {
-
-  public static final String SYSTEM_ID = "__system__";
 
   public OwnershipTypeService(@Nonnull SystemEntityClient entityClient) {
     super(entityClient);

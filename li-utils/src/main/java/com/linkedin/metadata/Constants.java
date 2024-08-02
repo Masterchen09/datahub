@@ -63,6 +63,7 @@ public class Constants {
   public static final String ML_FEATURE_TABLE_ENTITY_NAME = "mlFeatureTable";
   public static final String ML_MODEL_ENTITY_NAME = "mlModel";
   public static final String ML_MODEL_GROUP_ENTITY_NAME = "mlModelGroup";
+  public static final String ML_MODEL_DEPLOYMENT_ENTITY_NAME = "mlModelDeployment";
   public static final String ML_PRIMARY_KEY_ENTITY_NAME = "mlPrimaryKey";
   public static final String POLICY_ENTITY_NAME = "dataHubPolicy";
   public static final String TAG_ENTITY_NAME = "tag";
@@ -87,8 +88,9 @@ public class Constants {
   public static final String QUERY_ENTITY_NAME = "query";
   public static final String DATA_PRODUCT_ENTITY_NAME = "dataProduct";
   public static final String OWNERSHIP_TYPE_ENTITY_NAME = "ownershipType";
+  public static final String SYSTEM_ID = "__system__";
   public static final Urn DEFAULT_OWNERSHIP_TYPE_URN =
-      UrnUtils.getUrn("urn:li:ownershipType:__system__none");
+      UrnUtils.getUrn("urn:li:ownershipType:" + SYSTEM_ID + "none");
   public static final String STRUCTURED_PROPERTY_ENTITY_NAME = "structuredProperty";
   public static final String DATA_TYPE_ENTITY_NAME = "dataType";
   public static final String ENTITY_TYPE_ENTITY_NAME = "entityType";
@@ -231,6 +233,10 @@ public class Constants {
   public static final String ML_MODEL_GROUP_EDITABLE_PROPERTIES_ASPECT_NAME =
       "editableMlModelGroupProperties";
 
+  // ML Model Deployment
+  public static final String ML_MODEL_DEPLOYMENT_KEY_ASPECT_NAME = "mlModelDeploymentKey";
+  public static final String ML_MODEL_DEPLOYMENT_PROPERTIES_ASPECT_NAME = "mlModelDeploymentProperties";
+
   // ML Primary Key
   public static final String ML_PRIMARY_KEY_KEY_ASPECT_NAME = "mlPrimaryKeyKey";
   public static final String ML_PRIMARY_KEY_PROPERTIES_ASPECT_NAME = "mlPrimaryKeyProperties";
@@ -337,6 +343,7 @@ public class Constants {
   public static final String QUERY_SUBJECTS_ASPECT_NAME = "querySubjects";
 
   // DataProduct
+  public static final String DATA_PRODUCT_KEY_ASPECT_NAME = "dataProductKey";
   public static final String DATA_PRODUCT_PROPERTIES_ASPECT_NAME = "dataProductProperties";
   public static final String DATA_PRODUCTS_ASPECT_NAME = "dataProducts";
 
@@ -408,6 +415,7 @@ public class Constants {
       Arrays.asList("ownership", "status", "institutionalMemory");
 
   // Posts
+  public static final String POST_KEY_ASPECT_NAME = "postKey";
   public static final String POST_INFO_ASPECT_NAME = "postInfo";
   public static final String LAST_MODIFIED_FIELD_NAME = "lastModified";
 

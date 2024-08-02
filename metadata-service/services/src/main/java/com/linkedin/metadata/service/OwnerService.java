@@ -1,5 +1,6 @@
 package com.linkedin.metadata.service;
 
+import static com.linkedin.metadata.Constants.*;
 import static com.linkedin.metadata.entity.AspectUtils.*;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -24,8 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class OwnerService extends BaseService {
-
-  public static final String SYSTEM_ID = "__system__";
 
   public OwnerService(@Nonnull SystemEntityClient entityClient) {
     super(entityClient);

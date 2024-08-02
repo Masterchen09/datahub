@@ -7,7 +7,6 @@ import com.github.fge.jsonpatch.JsonPatch;
 import com.linkedin.common.AuditStamp;
 import com.linkedin.common.GlobalTags;
 import com.linkedin.common.TagAssociation;
-import com.linkedin.common.TagAssociationArray;
 import com.linkedin.common.urn.Urn;
 import com.linkedin.metadata.entity.EntityAspect;
 import com.linkedin.metadata.timeline.data.ChangeCategory;
@@ -18,7 +17,9 @@ import com.linkedin.metadata.timeline.data.SemanticChangeType;
 import com.linkedin.metadata.timeline.data.entity.TagChangeEvent;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 public class GlobalTagsChangeEventGenerator extends EntityChangeEventGenerator<GlobalTags> {
@@ -28,108 +29,64 @@ public class GlobalTagsChangeEventGenerator extends EntityChangeEventGenerator<G
   public static List<ChangeEvent> computeDiffs(
       GlobalTags baseGlobalTags,
       GlobalTags targetGlobalTags,
-      String entityUrn,
+      @Nonnull String entityUrn,
       AuditStamp auditStamp) {
-    sortGlobalTagsByTagUrn(baseGlobalTags);
-    sortGlobalTagsByTagUrn(targetGlobalTags);
     List<ChangeEvent> changeEvents = new ArrayList<>();
-    TagAssociationArray baseTags =
-        (baseGlobalTags != null) ? baseGlobalTags.getTags() : new TagAssociationArray();
-    TagAssociationArray targetTags =
-        (targetGlobalTags != null) ? targetGlobalTags.getTags() : new TagAssociationArray();
-    int baseTagIdx = 0;
-    int targetTagIdx = 0;
-    while (baseTagIdx < baseTags.size() && targetTagIdx < targetTags.size()) {
-      TagAssociation baseTagAssociation = baseTags.get(baseTagIdx);
-      TagAssociation targetTagAssociation = targetTags.get(targetTagIdx);
-      int comparison =
-          baseTagAssociation
-              .getTag()
-              .toString()
-              .compareTo(targetTagAssociation.getTag().toString());
-      if (comparison == 0) {
-        // No change to this tag.
-        ++baseTagIdx;
-        ++targetTagIdx;
-      } else if (comparison < 0) {
-        // Tag got removed.
-        changeEvents.add(
-            TagChangeEvent.entityTagChangeEventBuilder()
-                .modifier(baseTagAssociation.getTag().toString())
-                .entityUrn(entityUrn)
-                .category(ChangeCategory.TAG)
-                .operation(ChangeOperation.REMOVE)
-                .semVerChange(SemanticChangeType.MINOR)
-                .description(
-                    String.format(
-                        TAG_REMOVED_FORMAT, baseTagAssociation.getTag().getId(), entityUrn))
-                .tagUrn(baseTagAssociation.getTag())
-                .auditStamp(auditStamp)
-                .build());
-        ++baseTagIdx;
-      } else {
-        // Tag got added.
-        changeEvents.add(
-            TagChangeEvent.entityTagChangeEventBuilder()
-                .modifier(targetTagAssociation.getTag().toString())
-                .entityUrn(entityUrn)
-                .category(ChangeCategory.TAG)
-                .operation(ChangeOperation.ADD)
-                .semVerChange(SemanticChangeType.MINOR)
-                .description(
-                    String.format(
-                        TAG_ADDED_FORMAT, targetTagAssociation.getTag().getId(), entityUrn))
-                .tagUrn(targetTagAssociation.getTag())
-                .auditStamp(auditStamp)
-                .build());
-        ++targetTagIdx;
-      }
-    }
 
-    while (baseTagIdx < baseTags.size()) {
-      // Handle removed tags.
-      TagAssociation baseTagAssociation = baseTags.get(baseTagIdx);
-      changeEvents.add(
-          TagChangeEvent.entityTagChangeEventBuilder()
-              .modifier(baseTagAssociation.getTag().toString())
-              .entityUrn(entityUrn)
-              .category(ChangeCategory.TAG)
-              .operation(ChangeOperation.REMOVE)
-              .semVerChange(SemanticChangeType.MINOR)
-              .description(
-                  String.format(TAG_REMOVED_FORMAT, baseTagAssociation.getTag().getId(), entityUrn))
-              .tagUrn(baseTagAssociation.getTag())
-              .auditStamp(auditStamp)
-              .build());
-      ++baseTagIdx;
-    }
-    while (targetTagIdx < targetTags.size()) {
-      // Handle newly added tags.
-      TagAssociation targetTagAssociation = targetTags.get(targetTagIdx);
-      changeEvents.add(
-          TagChangeEvent.entityTagChangeEventBuilder()
-              .modifier(targetTagAssociation.getTag().toString())
-              .entityUrn(entityUrn)
-              .category(ChangeCategory.TAG)
-              .operation(ChangeOperation.ADD)
-              .semVerChange(SemanticChangeType.MINOR)
-              .description(
-                  String.format(TAG_ADDED_FORMAT, targetTagAssociation.getTag().getId(), entityUrn))
-              .tagUrn(targetTagAssociation.getTag())
-              .auditStamp(auditStamp)
-              .build());
-      ++targetTagIdx;
-    }
+    HashSet<Urn> baseGlobalTagUrns =
+        (baseGlobalTags != null)
+            ? new HashSet<>(
+                baseGlobalTags.getTags().stream()
+                    .map(TagAssociation::getTag)
+                    .collect(Collectors.toCollection(HashSet::new)))
+            : new HashSet<>();
+
+    HashSet<Urn> targetGlobalTagUrns =
+        (targetGlobalTags != null)
+            ? new HashSet<>(
+                targetGlobalTags.getTags().stream()
+                    .map(TagAssociation::getTag)
+                    .collect(Collectors.toCollection(HashSet::new)))
+            : new HashSet<>();
+
+    baseGlobalTagUrns.stream()
+        .filter(globalTagUrn -> !targetGlobalTagUrns.contains(globalTagUrn))
+        .sorted(Comparator.comparing(Urn::toString))
+        .forEach(
+            (globalTagUrn) -> {
+              changeEvents.add(
+                  TagChangeEvent.entityTagChangeEventBuilder()
+                      .modifier(globalTagUrn.toString())
+                      .entityUrn(entityUrn)
+                      .category(ChangeCategory.TAG)
+                      .operation(ChangeOperation.REMOVE)
+                      .semVerChange(SemanticChangeType.MINOR)
+                      .description(
+                          String.format(TAG_REMOVED_FORMAT, globalTagUrn.getId(), entityUrn))
+                      .tagUrn(globalTagUrn)
+                      .auditStamp(auditStamp)
+                      .build());
+            });
+
+    targetGlobalTagUrns.stream()
+        .filter(globalTagUrn -> !baseGlobalTagUrns.contains(globalTagUrn))
+        .sorted(Comparator.comparing(Urn::toString))
+        .forEach(
+            (globalTagUrn) -> {
+              changeEvents.add(
+                  TagChangeEvent.entityTagChangeEventBuilder()
+                      .modifier(globalTagUrn.toString())
+                      .entityUrn(entityUrn)
+                      .category(ChangeCategory.TAG)
+                      .operation(ChangeOperation.ADD)
+                      .semVerChange(SemanticChangeType.MINOR)
+                      .description(String.format(TAG_ADDED_FORMAT, globalTagUrn.getId(), entityUrn))
+                      .tagUrn(globalTagUrn)
+                      .auditStamp(auditStamp)
+                      .build());
+            });
+
     return changeEvents;
-  }
-
-  private static void sortGlobalTagsByTagUrn(GlobalTags globalTags) {
-    if (globalTags == null) {
-      return;
-    }
-    List<TagAssociation> tags = new ArrayList<>(globalTags.getTags());
-    tags.sort(Comparator.comparing(TagAssociation::getTag, Comparator.comparing(Urn::toString)));
-    globalTags.setTags(new TagAssociationArray(tags));
   }
 
   private static GlobalTags getGlobalTagsFromAspect(EntityAspect entityAspect) {
