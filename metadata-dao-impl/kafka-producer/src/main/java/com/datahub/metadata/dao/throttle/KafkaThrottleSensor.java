@@ -96,7 +96,7 @@ public class KafkaThrottleSensor implements ThrottleSensor {
   @VisibleForTesting
   public void refresh() {
     medianLag.putAll(getMedianLag());
-    log.info("MCL medianLag: {}", medianLag);
+    log.debug("MCL medianLag: {}", medianLag);
   }
 
   @VisibleForTesting
@@ -154,7 +154,7 @@ public class KafkaThrottleSensor implements ThrottleSensor {
 
       if (backoffWaitMs <= 0) {
         // not throttled, remove backoff tracking
-        log.info("Throttle exponential backoff reset.");
+        log.debug("Throttle exponential backoff reset.");
         backoffMap.remove(mclType);
         MetricUtils.gauge(
             this.getClass(),
@@ -186,14 +186,14 @@ public class KafkaThrottleSensor implements ThrottleSensor {
                     .inc();
               });
 
-      log.info("Throttling {} callbacks for {} ms.", throttleCallbacks.size(), maxBackoffWaitMs);
+      log.debug("Throttling {} callbacks for {} ms.", throttleCallbacks.size(), maxBackoffWaitMs);
       final ThrottleEvent throttleEvent = ThrottleEvent.throttle(throttled);
       List<ThrottleControl> throttleControls =
           throttleCallbacks.stream().map(callback -> callback.apply(throttleEvent)).toList();
 
       if (throttleControls.stream().anyMatch(ThrottleControl::hasCallback)) {
         Thread.sleep(maxBackoffWaitMs);
-        log.info("Resuming {} callbacks after wait.", throttleControls.size());
+        log.debug("Resuming {} callbacks after wait.", throttleControls.size());
         throttleControls.forEach(
             control -> control.execute(ThrottleEvent.clearThrottle(throttleEvent)));
       }
