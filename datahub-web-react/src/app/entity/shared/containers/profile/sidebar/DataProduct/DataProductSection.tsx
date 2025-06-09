@@ -48,7 +48,7 @@ export default function DataProductSection({ readOnly }: Props) {
                 message.destroy();
                 if (e instanceof Error) {
                     message.error({
-                        content: `Failed to remove data product. An unknown error occurred.`,
+                        content: `Failed to remove data product: \n ${e.message || ''}`,
                         duration: 3,
                     });
                 }

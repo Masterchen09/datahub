@@ -28,10 +28,10 @@ export default function BusinessAttributeItemMenu({ title, urn, onDelete }: Prop
                     onDelete?.();
                 }
             })
-            .catch(() => {
+            .catch((e) => {
                 message.destroy();
                 message.error({
-                    content: `Failed to delete Business Attribute!: An unknown error occurred.`,
+                    content: `Failed to delete Business Attribute: \n ${e.message || ''}`,
                     duration: 3,
                 });
             });

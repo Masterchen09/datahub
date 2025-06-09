@@ -1,5 +1,5 @@
 import { Button, Modal, message } from 'antd';
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 import DataProductBuilderForm from '@app/entityV2/domain/DataProductsTab/DataProductBuilderForm';
 import { DataProductBuilderState } from '@app/entityV2/domain/DataProductsTab/types';
@@ -43,7 +43,10 @@ export default function CreateDataProductModal({ domain, onCreateDataProduct, on
         })
             .then(({ data, errors }) => {
                 if (!errors) {
-                    message.success('Created Data Product!');
+                    message.success({
+                        content: 'Created Data Product!',
+                        duration: 2,
+                    });
                     if (data?.createDataProduct) {
                         const updateDataProduct = { ...data.createDataProduct, domain: { domain } };
                         onCreateDataProduct(updateDataProduct as DataProduct);
@@ -51,10 +54,13 @@ export default function CreateDataProductModal({ domain, onCreateDataProduct, on
                     onClose();
                 }
             })
-            .catch(() => {
+            .catch((e) => {
                 onClose();
                 message.destroy();
-                message.error({ content: 'Failed to create Data Product. An unexpected error occurred' });
+                message.error({
+                    content: `Failed to create Data Product: \n ${e.message || ''}`,
+                    duration: 3,
+                });
             });
     }
 
